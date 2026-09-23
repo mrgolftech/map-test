@@ -31,6 +31,12 @@ export type YieldTrendPoint = {
   outlier_reason: string | null
 }
 
+export type YieldExtremum = {
+  analysis_id: string
+  wafer_id: string | null
+  yield: number
+}
+
 export type BinTrendPoint = {
   analysis_id: string
   wafer_id: string | null
@@ -107,6 +113,8 @@ export type ComparisonData = {
   }
   yield_stats: YieldAggregate
   yield_trend: YieldTrendPoint[]
+  highest_yield_wafers: YieldExtremum[]
+  lowest_yield_wafers: YieldExtremum[]
   bin_aggregates: BinAggregate[]
   pattern_distribution: PatternDistributionItem[]
   wafers: WaferComparisonRow[]

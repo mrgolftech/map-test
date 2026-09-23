@@ -1,10 +1,18 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { AppProviders } from '../../app/providers'
 import { UploadPage } from './UploadPage'
 
+vi.mock('@tanstack/react-router', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@tanstack/react-router')>()
+  return {
+    ...actual,
+    useNavigate: () => vi.fn(),
+  }
+})
+
 describe('UploadPage', () => {
-  it('renders the Phase 1 parse entry with parse disabled before file selection', () => {
+  it('renders the parse entry with parse disabled before file selection', () => {
     render(
       <AppProviders>
         <UploadPage />

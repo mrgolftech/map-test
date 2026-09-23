@@ -22,6 +22,7 @@ import {
 } from 'antd'
 import { Download, FileText, RotateCcw } from 'lucide-react'
 import { PageHeader } from '../../components/common/PageHeader'
+import type { AIReport } from '../../types/ai'
 import type {
   BinStat,
   PatternResult,
@@ -60,12 +61,18 @@ type WaferExtraTab = {
 
 type WaferPageProps = {
   workspace?: WaferWorkspace
+  aiReport?: AIReport | null
+  aiModel?: string | null
+  aiGeneratedAt?: string | null
   extraActions?: ReactNode
   extraTabs?: WaferExtraTab[]
 }
 
 export function WaferPage({
   workspace,
+  aiReport,
+  aiModel,
+  aiGeneratedAt,
   extraActions,
   extraTabs,
 }: WaferPageProps = {}) {
@@ -292,7 +299,14 @@ export function WaferPage({
     const mapPng = mapRef.current?.exportPng()
     downloadText(
       `${filenameBase}-analysis-report.html`,
-      waferReportHtml(dataset, analysis, mapPng),
+      waferReportHtml(
+        dataset,
+        analysis,
+        mapPng,
+        aiReport,
+        aiModel,
+        aiGeneratedAt,
+      ),
       'text/html;charset=utf-8',
     )
   }

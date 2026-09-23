@@ -10,9 +10,14 @@ class SyntheticPattern(StrEnum):
     EDGE = "EDGE"
     CENTER = "CENTER"
     RING = "RING"
+    TOP = "TOP"
+    BOTTOM = "BOTTOM"
+    LEFT = "LEFT"
+    RIGHT = "RIGHT"
     QUADRANT = "QUADRANT"
     CLUSTER = "CLUSTER"
     LINE = "LINE"
+    MULTI_PATTERN = "MULTI_PATTERN"
 
 
 class DemoLotScenario(StrEnum):

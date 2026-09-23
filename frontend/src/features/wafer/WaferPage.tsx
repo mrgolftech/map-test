@@ -28,6 +28,7 @@ import type {
   RegionMetric,
   SpatialBinStat,
 } from '../../types/analysis'
+import type { WaferWorkspace } from '../../types/analysis'
 import type { DieRecord } from '../../types/wafer'
 import { binColor } from './binColors'
 import { MiniWaferMap } from './MiniWaferMap'
@@ -51,9 +52,14 @@ function safeName(value: string | null | undefined) {
   return (value ?? 'wafer').replaceAll(/[^a-zA-Z0-9._-]+/g, '_')
 }
 
-export function WaferPage() {
+type WaferPageProps = {
+  workspace?: WaferWorkspace
+}
+
+export function WaferPage({ workspace: providedWorkspace }: WaferPageProps = {}) {
   const navigate = useNavigate()
-  const workspace = useMemo(() => loadWaferWorkspace(), [])
+  const sessionWorkspace = useMemo(() => loadWaferWorkspace(), [])
+  const workspace = providedWorkspace ?? sessionWorkspace
   const mapRef = useRef<WaferMapHandle | null>(null)
   const [filterMode, setFilterMode] = useState<WaferFilterMode>('all')
   const [selectedBins, setSelectedBins] = useState<number[]>([])

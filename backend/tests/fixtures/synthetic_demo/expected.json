@@ -1,0 +1,31 @@
+{
+  "seed": 20260923,
+  "metadata": {
+    "product_id": "DEMO_RFIC_A",
+    "lot_id": "SYNTH001",
+    "wafer_id": "01",
+    "flow_id": "CP1",
+    "notch": "DOWN",
+    "rows": 24,
+    "columns": 32
+  },
+  "summary": {
+    "tested_die": 512,
+    "pass_die": 358,
+    "fail_die": 154,
+    "yield": 0.69921875
+  },
+  "bins": {
+    "1": 358,
+    "16": 50,
+    "18": 60,
+    "20": 30,
+    "22": 10,
+    "27": 4
+  },
+  "main_fail_bin": 18,
+  "source_files": [
+    "SYNTH001.01.PAT",
+    "SYNTH001_20260101090000.CP1"
+  ]
+}

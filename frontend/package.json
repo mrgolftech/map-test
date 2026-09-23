@@ -38,5 +38,6 @@
     "typescript-eslint": "8.70.1",
     "vite": "8.2.2",
     "vitest": "5.0.1"
-  }
+  },
+  "packageManager": "npm@10.9.8"
 }

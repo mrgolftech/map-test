@@ -24,19 +24,99 @@
 
 ## Phase 1 — Wafer Data Core
 
-目标：保证数据可信。
+目标：保证数据可信，并建立可扩展但不过度抽象的多源 Parser 边界。
+
+### 1. Canonical contracts
 
 - WaferDataset schema；
-- Parser base / detector；
+- SourceDescriptor；
+- SourceParseResult（内部）；
+- ParseResult；
+- ValidationIssue + stage；
+- stable parser error codes。
+
+### 2. Detection / Parsing / Assembly
+
+- Parser base；
+- deterministic detector + detection evidence；
 - PAT parser；
 - CP parser；
-- ValidationIssue；
-- parse API；
-- fixture；
-- Simulator v1；
-- parser regression tests。
+- WaferAssembler；
+- PAT + CP cross-file validation；
+- canonical validation。
 
-退出条件：固定 PAT / CP 与模拟 fixture 均可得到可信标准数据。
+正式链路：
+
+```text
+Source File(s)
+→ Detector
+→ Source Parser(s)
+→ SourceParseResult[]
+→ WaferAssembler
+→ WaferDataset
+→ Canonical Validator
+→ ParseResult
+```
+
+### 3. API
+
+- `POST /api/v1/files/parse`；
+- 文件大小 / 数量 / 扩展名 / 编码限制；
+- ParseResult 返回 sources + validation；
+- INVALID 数据不得进入后续 Analysis。
+
+### 4. Fixture / Simulator v1
+
+- 正常 PAT；
+- 正常 CP；
+- PAT + CP；
+- 空文件；
+- 编码异常；
+- 缺行；
+- 行长度异常；
+- 未知 Bin；
+- Bin Count mismatch；
+- Tested mismatch；
+- metadata mismatch；
+- extension/content mismatch；
+- ambiguous detector；
+- cross-file conflict；
+- golden `expected.json`；
+- Simulator v1：固定 seed、基础 geometry/Bin、Canonical WaferDataset、最小脱敏 PAT/CP serializer。
+
+Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这部分随 Phase 2 空间算法实现。
+
+### 5. Tests / invariants
+
+- Parser regression tests；
+- exact canonical facts；
+- detector tests；
+- cross-file assembly tests；
+- validation code tests；
+- Simulator → serialize → Parser → canonical facts round-trip；
+- 既有 PAT/CP 文件仅用于确认格式结构；测试数据必须重新生成并脱敏，不把其具体 Wafer 数据作为产品真值或提交 Git。
+
+### Phase 1 退出条件
+
+必须同时满足：
+
+1. PAT / CP / PAT+CP golden fixture 稳定得到预期 WaferDataset；
+2. detector 不只依赖扩展名，错误/歧义均有明确错误码；
+3. 多源字段冲突不会被静默覆盖；
+4. tested / pass / fail / bin / rows / columns / notch 等 canonical facts 可回归；
+5. Simulator round-trip invariant 通过；
+6. 基于已知 PAT/CP 样例格式生成的独立 synthetic golden fixture 与预设事实一致；
+7. backend tests、frontend existing tests、Docker build 全部 CI 通过。
+
+明确不进入 Phase 1：
+
+- STDF / ATDF；
+- Rust / WASM；
+- Wafer renderer；
+- spatial pattern；
+- DBSCAN；
+- Lot analysis；
+- AI。
 
 ## Phase 2 — Single Wafer Analysis
 

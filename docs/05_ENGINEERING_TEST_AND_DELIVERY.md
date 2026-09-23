@@ -75,7 +75,13 @@ main
 - 未知 Bin；
 - Bin Count mismatch；
 - Tested mismatch；
-- PAT / CP metadata mismatch。
+- PAT / CP metadata mismatch；
+- 扩展名正确但内容不匹配；
+- 内容可识别但扩展名错误；
+- 多 Parser 同时匹配的 ambiguous case；
+- 多源字段冲突；
+- map 外空白不计入 tested；
+- 固定 fixture 的 exact expected facts。
 
 ### Analysis
 
@@ -162,9 +168,31 @@ fixture 必须说明：
 
 - seed；
 - geometry；
-- expected yield；
-- injected pattern；
-- expected main bin。
+- expected tested / pass / fail / bin counts；
+- expected yield（进入 Analysis 阶段后）；
+- injected pattern（Phase 2 起）；
+- expected main bin（Phase 2 起）。
+
+Phase 1 Parser fixture 推荐使用：
+
+```text
+fixture source file(s)
++ expected.json
+```
+
+其中 expected.json 保存 canonical metadata、row/column、Bin count 与 ValidationIssue 预期，形成 golden fixture。
+
+至少增加一类 round-trip invariant：
+
+```text
+Simulator config
+→ serialized PAT / CP fixture
+→ real Parser
+→ WaferDataset
+→ compare expected canonical facts
+```
+
+既有 PAT/CP 样例只用于确认格式结构；正式回归使用重新生成的 synthetic fixture，不提交原始样例文件。
 
 ## 8. CI
 
@@ -277,7 +305,19 @@ reproduce
 
 如果设计决策与当前文档冲突，应先明确变更原因，再修改实现。
 
-## 14. Review Checklist
+## 14. 上游参考项目检查
+
+涉及 Parser、Wafer Renderer、空间算法、Lot 分析时，应先查看 `docs/07_REFERENCE_PROJECTS_AND_ADOPTED_PRACTICES.md`。
+
+Review 必须确认：
+
+- 借鉴的是工程模式还是直接复制代码；
+- 许可证是否允许；
+- 是否无意引入参考项目的格式假设；
+- 是否为了“追平功能”扩大当前 Phase；
+- 新依赖是否有 map-test 自身的必要性。
+
+## 15. Review Checklist
 
 每次 PR 至少检查：
 

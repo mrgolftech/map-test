@@ -169,29 +169,84 @@ Repository / DB / external provider
 - AI provider 直接依赖 FastAPI Request；
 - ORM Model 直接作为 API response contract。
 
-## 6. Parser 插件架构
+## 6. Parser 插件与组装架构
 
-必须采用：
+借鉴成熟半导体解析项目的“严格解析 + 标准化”思路，并结合 PAT + CP 多源组合场景，Phase 1 采用：
+
+```text
+Source File(s)
+      ↓
+Format Detector
+      ↓
+Source Parser(s)
+      ↓
+SourceParseResult[]
+      ↓
+WaferAssembler
+      ↓
+Canonical WaferDataset
+      ↓
+Canonical Validator
+      ↓
+ParseResult
+```
+
+目录至少：
 
 ```text
 parsers/
 ├─ base.py
 ├─ detector.py
 ├─ pat_parser.py
-└─ cp_parser.py
+├─ cp_parser.py
+└─ assembler.py
 ```
 
-统一接口至少表达：
+### 6.1 Detector
 
-- supports / detect；
-- parse；
-- source metadata；
-- warnings；
-- errors。
+Detector 必须基于可解释 evidence：
 
-新增厂商格式时，应新增 Parser，不修改核心分析逻辑。
+- extension；
+- magic/header/signature；
+- required section / keyword；
+- row/map structure。
 
-格式探测不能只依赖扩展名；扩展名只能作为信号之一。
+扩展名只能作为证据之一。若多个 Parser 同时匹配且无法唯一决定，返回明确的 FORMAT_AMBIGUOUS，不猜测。
+
+### 6.2 Source Parser
+
+每个 Parser 只负责一个源文件格式，输出内部 SourceParseResult。
+
+SourceParseResult 可以是不完整的。例如：
+
+- 某文件只提供 metadata / Bin 定义；
+- 某文件只提供 map rows；
+- 某文件同时提供完整信息。
+
+Parser 不要求单文件独立构造完整 WaferDataset。
+
+### 6.3 WaferAssembler
+
+Assembler 负责：
+
+- 关联一个或多个 SourceParseResult；
+- 合并字段来源；
+- 检查 Product / Lot / Wafer / geometry 等冲突；
+- 构造唯一 Canonical WaferDataset；
+- 保留 source provenance。
+
+Assembler 不负责 Yield/空间 Pattern 等 Phase 2 分析。
+
+### 6.4 Validation 分层
+
+至少分为：
+
+1. source structural validation；
+2. parser semantic validation；
+3. cross-file / assembly validation；
+4. canonical WaferDataset validation。
+
+新增厂商格式时，应新增 Parser / assembler rule，不修改前端和确定性分析核心。
 
 ## 7. API 设计
 
@@ -227,6 +282,18 @@ POST   /simulator/generate
 ```
 
 具体接口可在实现中微调，但变化必须同步更新文档。
+
+`POST /files/parse` 返回 ParseResult，而不是裸 WaferDataset：
+
+```text
+ParseResult
+├─ dataset?
+├─ sources[]
+├─ validation_issues[]
+└─ status: VALID | WARNING | INVALID
+```
+
+这样前端可以显示文件探测、来源与校验信息，但仍不理解 PAT / CP 内部语法。
 
 ## 8. API 返回规范
 

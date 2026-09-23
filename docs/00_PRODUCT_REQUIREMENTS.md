@@ -48,16 +48,19 @@ MVP 不做复杂用户权限、多租户、企业组织架构与审批流。
 - PAT；
 - CP1 / 类 CP Map；
 - PAT + CP 成对上传并尝试关联；
-- 文件格式自动探测；
+- 多源文件先独立探测/解析，再关联组装为唯一 WaferDataset；
+- 文件格式自动探测，并向用户返回探测依据与源文件角色；
 - 编码异常、空文件、缺行、行长度异常、未知 Bin 等明确报错；
 - 原始 Row / Column 保留；
 - 晶圆外空白区域保留语义；
 - Notch 识别；
 - Map 行列校验；
 - Bin Count 与 Map 字符数量交叉校验；
-- Tested = Pass + Fail 校验。
+- Tested = Pass + Fail 校验；
+- 多文件 Product / Lot / Wafer / geometry 冲突校验；
+- 每个源文件保留 filename / size / sha256 / detected format 等 provenance。
 
-禁止静默修正无法解释的数据错误。
+禁止静默修正无法解释的数据错误，也禁止通过解析顺序覆盖冲突字段。
 
 ### 3.2 标准数据模型
 
@@ -207,7 +210,7 @@ AI 输出必须结构化：
 - multi_pattern；
 - yield_drift_lot。
 
-模拟器必须支持：
+模拟器最终必须支持：
 
 - Row / Column；
 - wafer shape；
@@ -220,6 +223,8 @@ AI 输出必须结构化：
 - Lot / Wafer 序号；
 - 输出标准 WaferDataset；
 - 可选生成脱敏 PAT / CP fixture。
+
+Phase 1 的 Simulator v1 只要求：可重复生成合法 WaferDataset、基础 Bin/geometry，并可生成最小 PAT / CP 解析 fixture；Edge/Ring/Cluster 等 Pattern 注入在 Phase 2 随空间算法实现。
 
 固定 seed 的 fixture 必须可重复。
 

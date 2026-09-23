@@ -47,34 +47,78 @@ WaferDataset
 约束：
 
 - Row / Column 使用源文件真实坐标语义；
+- 数组索引、Die Grid 坐标、显示旋转、物理坐标是不同概念；Phase 1 至少保留源坐标与 Notch，不能因 UI 需要改写；
 - API 是否展示 0-based / 1-based 必须显式定义，内部推荐统一 0-based；
 - source_char 必须保留；
 - result 枚举固定 PASS / FAIL / UNKNOWN；
 - 未测试 / 晶圆外区域不能伪造为 FAIL；
 - 不存在的数据用 null，不编造默认值。
 
-## 2. Parser 输出
+## 2. Parser / Assembly 数据契约
 
-Parser 不直接输出前端视图模型，输出：
+### 2.1 SourceDescriptor
 
-- WaferDataset；
-- source file metadata；
-- validation issues。
+每个上传源文件必须产生 SourceDescriptor：
 
-ValidationIssue：
+```text
+SourceDescriptor
+├─ filename
+├─ size
+├─ sha256
+├─ detected_format
+├─ parser_id
+├─ role: metadata | map | combined | unknown
+└─ detection_evidence[]
+```
+
+禁止保存客户端绝对路径。
+
+### 2.2 SourceParseResult
+
+单个 Parser 输出内部 SourceParseResult：
+
+```text
+SourceParseResult
+├─ source
+├─ extracted_metadata
+├─ map_rows / dies?
+├─ bin_definitions?
+└─ parser_issues[]
+```
+
+SourceParseResult 是内部模型，不作为前端领域契约。它允许信息不完整，以支持 PAT + CP 等多文件组合。
+
+### 2.3 ParseResult
+
+WaferAssembler 完成关联、合并和 canonical validation 后，API 返回：
+
+```text
+ParseResult
+├─ dataset?
+├─ sources[]
+├─ validation_issues[]
+└─ status: VALID | WARNING | INVALID
+```
+
+只有 VALID / WARNING 且不存在阻断性 ERROR 时，dataset 才可进入后续正式分析。
+
+### 2.4 ValidationIssue
 
 ```text
 severity: INFO | WARNING | ERROR
+stage: DETECT | PARSE | ASSEMBLE | CANONICAL
 code
 message
-source_file
+source_file?
 line?
 row?
 column?
 details?
 ```
 
-ERROR 表示结果不可信，默认不得进入正式分析；WARNING 可以继续但 UI 必须可见。
+ERROR 表示结果不可信；WARNING 可以继续但 UI 必须可见。
+
+Parser / Assembler 不输出前端 ViewModel。
 
 ## 3. 必要一致性校验
 
@@ -89,9 +133,15 @@ ERROR 表示结果不可信，默认不得进入正式分析；WARNING 可以继
 7. PAT / CP 关联时 Product / Lot / Wafer 等关键字段；
 8. Notch 合法性；
 9. 坐标唯一；
-10. 空文件 / 无 Die。
+10. 空文件 / 无 Die；
+11. detector 内容证据与扩展名矛盾；
+12. 多源字段合并冲突；
+13. SourceDescriptor checksum / size 合法；
+14. map 外空白与 tested die 不混淆。
 
 禁止为了“跑通”自动删除、填补或篡改异常 Die。
+
+字段冲突时必须保留冲突双方和来源，不允许使用“后解析文件覆盖前文件”的隐式策略。
 
 ## 4. 基础统计
 

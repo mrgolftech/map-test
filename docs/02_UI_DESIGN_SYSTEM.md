@@ -277,3 +277,25 @@ Toast / Message 用于短反馈；结构化错误使用 Alert / Result / ErrorSt
 - icon-only button 必须有 accessible name；
 - Tooltip 不承载唯一关键信息；
 - 主要触控区域目标建议 ≥ 40px。
+
+
+## 14. Wafer 专业工具参考原则
+
+Wafer Map 与工程 UI 可参考 `wafertools/wafermap` / `wafertools/tsmap` 的成熟交互经验，但 map-test 继续以 Ant Design 为主 UI 组件库。
+
+采纳：
+
+- UI chrome 颜色统一走 design token，不在业务组件散落硬编码；
+- Canvas 绘制的轴线、网格、Tooltip、Selection 也必须响应 Light / Dark；
+- Renderer、Selection、Viewport、Tooltip 分离，避免一个组件同时处理所有状态；
+- Keyboard、focus-visible、ARIA、Escape close 等交互遵循成熟组件行为；
+- Wafer Map 性能与交互行为需要独立测试；
+- 单 Wafer 与 Mini Wafer / Gallery 共用 palette、坐标和 renderer 语义。
+
+不采纳：
+
+- 不重写 Ant Design 已有 Menu / Modal / Drawer / Select / Tooltip；
+- 不复制参考项目的手写 DOM UI；
+- 不为了保持一致而放弃本项目既定的 React + Ant Design 设计系统。
+
+参考项目只提供工程经验，不构成新的 UI 依赖。

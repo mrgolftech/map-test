@@ -32,6 +32,7 @@
 - `docs/04_DATA_MODEL_PARSING_AND_ANALYSIS.md`：WaferDataset、Parser、Validation、空间算法与 AnalysisSummary
 - `docs/05_ENGINEERING_TEST_AND_DELIVERY.md`：工程、测试、CI、Docker、敏感数据与 DoD
 - `docs/06_IMPLEMENTATION_ROADMAP.md`：实现顺序与阶段退出条件
+- `docs/07_REFERENCE_PROJECTS_AND_ADOPTED_PRACTICES.md`：上游参考项目、可借鉴实践与禁止越界项
 
 ## 实现优先级
 

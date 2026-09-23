@@ -36,9 +36,14 @@ const demoPatterns: SyntheticPattern[] = [
   'EDGE',
   'CENTER',
   'RING',
+  'TOP',
+  'BOTTOM',
+  'LEFT',
+  'RIGHT',
   'QUADRANT',
   'CLUSTER',
   'LINE',
+  'MULTI_PATTERN',
   'RANDOM',
 ]
 

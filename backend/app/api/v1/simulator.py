@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from fastapi import APIRouter
 
+from app.core.errors import AppError
 from app.schemas.simulator import (
     DemoLotData,
     DemoLotRequest,
@@ -28,13 +29,20 @@ def _wafer(
     columns: int = 32,
     time_offset_minutes: int = 0,
 ):
-    dataset = generate_pattern_dataset(
-        pattern.value,
-        seed=seed,
-        fail_count=fail_count,
-        rows=rows,
-        columns=columns,
-    )
+    try:
+        dataset = generate_pattern_dataset(
+            pattern.value,
+            seed=seed,
+            fail_count=fail_count,
+            rows=rows,
+            columns=columns,
+        )
+    except ValueError as exc:
+        raise AppError(
+            code="SIMULATOR_INVALID_CONFIG",
+            message=str(exc),
+            status_code=422,
+        ) from exc
     dataset.metadata.product_id = product_id
     dataset.metadata.lot_id = lot_id
     dataset.metadata.wafer_id = wafer_id

@@ -279,3 +279,13 @@ textarea { font: inherit; }
     min-height: 300px;
   }
 }
+
+
+.wafer-map-frame-compact {
+  min-height: 180px;
+  max-height: 260px;
+}
+
+.wafer-map-canvas-compact {
+  min-height: 180px;
+}

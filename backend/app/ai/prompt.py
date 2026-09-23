@@ -1,8 +1,6 @@
 import json
 
 from app.schemas.analysis import AnalysisSummary
-
-
 SYSTEM_PROMPT = """You are the explanation layer of a semiconductor wafer analysis platform.
 
 Strict rules:

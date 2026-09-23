@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AIReport } from '../../types/ai'
 import type { AnalysisSummary } from '../../types/analysis'
 import type { WaferDataset } from '../../types/wafer'
 import { waferReportHtml } from './report'
@@ -52,6 +53,37 @@ const analysis: AnalysisSummary = {
   limitations: ['demo only'],
 }
 
+const aiReport: AIReport = {
+  executive_summary: '<AI summary>',
+  key_findings: [
+    {
+      kind: 'FACT',
+      title: 'Yield',
+      detail: 'Deterministic fact',
+      evidence: ['summary'],
+    },
+  ],
+  spatial_patterns: [],
+  possible_causes: [
+    {
+      kind: 'HYPOTHESIS',
+      title: 'Process hypothesis',
+      detail: 'Needs verification',
+      rationale: 'Spatial correlation only',
+    },
+  ],
+  recommended_checks: [
+    {
+      kind: 'RECOMMENDATION',
+      title: 'Check neighbor wafer',
+      action: 'Compare same bin',
+      expected_evidence: 'Repeated pattern',
+    },
+  ],
+  confidence: 0.75,
+  limitations: ['No process parameters'],
+}
+
 describe('waferReportHtml', () => {
   it('creates standalone escaped HTML report', () => {
     const html = waferReportHtml(
@@ -66,6 +98,24 @@ describe('waferReportHtml', () => {
     expect(html).toContain('data:image/png;base64,AAAA')
     expect(html).toContain('[FACT]')
     expect(html).not.toContain('<DEMO>')
+  })
+
+  it('includes escaped persisted AI diagnosis when provided', () => {
+    const html = waferReportHtml(
+      dataset,
+      analysis,
+      null,
+      aiReport,
+      'saved-model',
+      '2026-09-24T00:00:00Z',
+    )
+
+    expect(html).toContain('AI Assisted Diagnosis')
+    expect(html).toContain('&lt;AI summary&gt;')
+    expect(html).toContain('HYPOTHESIS')
+    expect(html).toContain('RECOMMENDATION')
+    expect(html).toContain('saved-model')
+    expect(html).not.toContain('<AI summary>')
   })
 
   it('does not embed non-image data URLs', () => {

@@ -81,11 +81,10 @@ export function WaferPage() {
   const metadata = dataset.metadata
   const filenameBase = `${safeName(metadata.lot_id)}-${safeName(metadata.wafer_id)}`
 
-  const passBins = new Set(
-    dataset.bins
-      .filter((item) => (item.description ?? '').toUpperCase().includes('PASS'))
-      .map((item) => item.bin),
-  )
+  const describedPassBins = dataset.bins
+    .filter((item) => (item.description ?? '').toUpperCase().includes('PASS'))
+    .map((item) => item.bin)
+  const passBins = new Set(describedPassBins.length > 0 ? describedPassBins : [1])
 
   const mainFailBins = analysis.bin_stats
     .filter((item) => !passBins.has(item.soft_bin) && item.count > 0)

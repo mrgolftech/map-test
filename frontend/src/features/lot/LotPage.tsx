@@ -367,6 +367,40 @@ export function LotPage() {
                     />
                   </Card>
                 </Col>
+                <Col xs={24} md={12} xl={6}>
+                  <Card size="small" className="metric-card">
+                    <Statistic
+                      title="最高 Yield Wafer"
+                      value={
+                        data.highest_yield_wafers
+                          .map((item) => item.wafer_id ?? item.analysis_id.slice(0, 8))
+                          .join(', ') || '—'
+                      }
+                    />
+                    <Typography.Text type="secondary">
+                      {data.highest_yield_wafers[0]
+                        ? percent(data.highest_yield_wafers[0].yield)
+                        : '无有效 Yield'}
+                    </Typography.Text>
+                  </Card>
+                </Col>
+                <Col xs={24} md={12} xl={6}>
+                  <Card size="small" className="metric-card">
+                    <Statistic
+                      title="最低 Yield Wafer"
+                      value={
+                        data.lowest_yield_wafers
+                          .map((item) => item.wafer_id ?? item.analysis_id.slice(0, 8))
+                          .join(', ') || '—'
+                      }
+                    />
+                    <Typography.Text type="secondary">
+                      {data.lowest_yield_wafers[0]
+                        ? percent(data.lowest_yield_wafers[0].yield)
+                        : '无有效 Yield'}
+                    </Typography.Text>
+                  </Card>
+                </Col>
               </Row>
 
               {data.compatibility.issues.map((issue) => (

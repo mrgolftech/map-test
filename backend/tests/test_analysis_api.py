@@ -44,3 +44,22 @@ def test_analysis_api_accepts_threshold_override(client):
 
     assert response.status_code == 200
     assert response.json()["config"]["enrichment_threshold"] == 1.3
+
+
+def test_analysis_api_rejects_inconsistent_canonical_dataset(client):
+    dataset = generate_pattern_dataset("EDGE", fail_count=48)
+    payload = dataset.model_dump(mode="json", by_alias=True)
+    payload["summary"]["tested_die"] -= 1
+
+    response = client.post(
+        "/api/v1/analysis",
+        json={"dataset": payload},
+    )
+
+    assert response.status_code == 422
+    error = response.json()["error"]
+    assert error["code"] == "ANALYSIS_DATASET_INVALID"
+    assert any(
+        issue["code"] == "CANONICAL_TESTED_MISMATCH"
+        for issue in error["details"]["issues"]
+    )

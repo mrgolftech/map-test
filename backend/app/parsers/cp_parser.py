@@ -50,6 +50,9 @@ class CpParser(BaseParser):
         try:
             text = decode_text(source)
         except UnicodeDecodeError:
+            if suffix == ".cp1":
+                score = max(score, 0.65)
+                evidence.append("extension routes undecodable content to CP validation")
             return DetectionResult(
                 parser_id=self.parser_id,
                 detected_format=self.detected_format,

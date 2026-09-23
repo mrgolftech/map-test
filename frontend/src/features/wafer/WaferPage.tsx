@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   Alert,
@@ -38,7 +38,6 @@ import {
   type WaferFilterMode,
   type WaferMapHandle,
 } from './WaferMap'
-import { loadWaferWorkspace } from './workspace'
 
 function percent(value: number | null | undefined) {
   return value === null || value === undefined ? '—' : `${(value * 100).toFixed(2)}%`
@@ -54,12 +53,14 @@ function safeName(value: string | null | undefined) {
 
 type WaferPageProps = {
   workspace?: WaferWorkspace
+  extraActions?: ReactNode
 }
 
-export function WaferPage({ workspace: providedWorkspace }: WaferPageProps = {}) {
+export function WaferPage({
+  workspace,
+  extraActions,
+}: WaferPageProps = {}) {
   const navigate = useNavigate()
-  const sessionWorkspace = useMemo(() => loadWaferWorkspace(), [])
-  const workspace = providedWorkspace ?? sessionWorkspace
   const mapRef = useRef<WaferMapHandle | null>(null)
   const [filterMode, setFilterMode] = useState<WaferFilterMode>('all')
   const [selectedBins, setSelectedBins] = useState<number[]>([])
@@ -389,6 +390,7 @@ export function WaferPage({ workspace: providedWorkspace }: WaferPageProps = {})
             <Button type="primary" icon={<Download size={16} />} onClick={exportPng}>
               导出 PNG
             </Button>
+            {extraActions}
           </Space>
         )}
       />

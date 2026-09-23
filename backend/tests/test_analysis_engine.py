@@ -109,3 +109,25 @@ def test_multi_pattern_fixture_exposes_two_independent_fail_bins():
     }
     assert "EDGE" in _patterns_for(summary, 18)
     assert "CENTER" in _patterns_for(summary, 20)
+
+
+def test_mixed_failures_single_wafer_has_separate_bin_distributions_and_findings():
+    dataset = generate_pattern_dataset("MIXED_FAILURES", fail_count=300)
+    summary = AnalysisEngine().analyze(dataset)
+
+    assert [(item.bin, item.count) for item in dataset.bins] == [
+        (1, 212), (18, 165), (20, 60), (16, 36),
+        (22, 21), (27, 12), (28, 6),
+    ]
+    assert len({(die.row, die.column) for die in dataset.dies}) == 512
+    assert "EDGE" in _patterns_for(summary, 18)
+    assert "CENTER" in _patterns_for(summary, 20)
+    assert "LOCALIZED_CLUSTER" in _patterns_for(summary, 16)
+    assert "RING" in _patterns_for(summary, 22)
+    assert all(item.count > 0 for item in summary.spatial_by_bin)
+    assert any("Other fail bins (6 total)" in item.text for item in summary.top_findings)
+    assert len({
+        item.text.split("for Bin ")[1].split()[0]
+        for item in summary.top_findings
+        if item.kind == "JUDGMENT" and "for Bin " in item.text
+    }) == 3

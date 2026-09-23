@@ -1,9 +1,12 @@
+from pathlib import Path
+
 from app.core.config import get_settings
 from app.parsers.base import RawSource
 from app.schemas.parsing import ParseStatus
 from app.services.file_parse_service import FileParseService
 from app.simulator.formats import serialize_cp1, serialize_pat
 from app.simulator.generator import default_demo_config, generate_synthetic_dataset
+from app.simulator.patterns import generate_pattern_dataset
 
 
 def test_simulator_pat_cp_round_trip_preserves_canonical_facts():
@@ -39,4 +42,27 @@ def test_simulator_pat_cp_round_trip_preserves_canonical_facts():
     ] == [
         (die.row, die.column, die.source_char, die.soft_bin, die.result)
         for die in expected.dies
+    ]
+
+
+def test_mixed_failures_pat_cp_round_trip_preserves_all_fail_bins():
+    expected = generate_pattern_dataset("MIXED_FAILURES", fail_count=300)
+    fixture_dir = Path(__file__).parent / "fixtures" / "mixed_failures"
+    pat = (fixture_dir / "DEMO.01.PAT").read_text(encoding="utf-8")
+    cp = (fixture_dir / "DEMO.CP1").read_text(encoding="utf-8")
+    assert pat == serialize_pat(expected, filename="DEMO.01.PAT")
+    assert cp == serialize_cp1(expected)
+    result = FileParseService(get_settings()).parse_sources(
+        [RawSource("DEMO.01.PAT", pat.encode()), RawSource("DEMO.CP1", cp.encode())]
+    )
+
+    assert result.status == ParseStatus.VALID
+    assert result.dataset is not None
+    assert {item.bin: item.count for item in result.dataset.bins} == {
+        item.bin: item.count for item in expected.bins
+    }
+    assert [
+        (item.row, item.column, item.soft_bin) for item in result.dataset.dies
+    ] == [
+        (item.row, item.column, item.soft_bin) for item in expected.dies
     ]

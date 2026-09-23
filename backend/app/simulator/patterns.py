@@ -27,7 +27,20 @@ PatternName = Literal[
     "CLUSTER",
     "LINE",
     "MULTI_PATTERN",
+    "MIXED_FAILURES",
 ]
+
+# A deliberately synthetic single-wafer scenario: distinct test bins can have
+# different spatial signatures on the same wafer. Counts are proportions of
+# fail_count and do not reproduce any production map or bin histogram.
+MIXED_FAILURE_SPECS = (
+    (18, "Pout_min", "EDGE", 55),
+    (20, "Pout_max", "CENTER", 20),
+    (16, "BER_RESULT", "CLUSTER", 12),
+    (22, "Pout_margin", "RING", 7),
+    (27, "GADC", "RANDOM", 4),
+    (28, "ICC_sleep", "RANDOM", 2),
+)
 
 
 def _normalized(
@@ -155,9 +168,10 @@ def generate_pattern_dataset(
         raise ValueError("fail_count must leave both PASS and FAIL dies.")
     if pattern == "MULTI_PATTERN" and fail_count < 2:
         raise ValueError("MULTI_PATTERN requires at least two failing dies.")
+    if pattern == "MIXED_FAILURES" and fail_count < len(MIXED_FAILURE_SPECS):
+        raise ValueError("MIXED_FAILURES requires at least six failing dies.")
 
-    primary_fail_coordinates: set[tuple[int, int]]
-    secondary_fail_coordinates: set[tuple[int, int]] = set()
+    fail_groups: list[tuple[int, str, set[tuple[int, int]]]] = []
     if pattern == "MULTI_PATTERN":
         primary_count = fail_count // 2
         secondary_count = fail_count - primary_count
@@ -178,46 +192,61 @@ def generate_pattern_dataset(
             fail_count=secondary_count,
             seed=seed + 1,
         )
+        fail_groups = [
+            (18, "Pout_min", primary_fail_coordinates),
+            (20, "Pout_max", secondary_fail_coordinates),
+        ]
+    elif pattern == "MIXED_FAILURES":
+        remaining = coordinates.copy()
+        assigned = 0
+        for index, (soft_bin, description, spatial_pattern, weight) in enumerate(
+            MIXED_FAILURE_SPECS
+        ):
+            count = (
+                fail_count - assigned
+                if index == len(MIXED_FAILURE_SPECS) - 1
+                else max(1, fail_count * weight // 100)
+            )
+            # Leave one die for every later bin when the requested total is small.
+            count = min(count, fail_count - assigned - (len(MIXED_FAILURE_SPECS) - index - 1))
+            selected = _select_fail_coordinates(
+                spatial_pattern,
+                remaining,
+                fail_count=count,
+                seed=seed + index,
+            )
+            fail_groups.append((soft_bin, description, selected))
+            remaining = [item for item in remaining if item not in selected]
+            assigned += count
     else:
-        primary_fail_coordinates = _select_fail_coordinates(
+        fail_groups = [(18, "Pout_min", _select_fail_coordinates(
             pattern,
             coordinates,
             fail_count=fail_count,
             seed=seed,
-        )
+        ))]
 
-    if (
-        len(primary_fail_coordinates)
-        + len(secondary_fail_coordinates)
-        != fail_count
-    ):
+    if sum(len(group) for _, _, group in fail_groups) != fail_count:
         raise ValueError(
             f"Pattern {pattern} cannot provide {fail_count} unique fail coordinates."
         )
 
     pass_char = soft_bin_to_char(1)
-    primary_fail_char = soft_bin_to_char(18)
-    secondary_fail_char = soft_bin_to_char(20)
-    if (
-        pass_char is None
-        or primary_fail_char is None
-        or secondary_fail_char is None
-    ):
+    if pass_char is None or any(soft_bin_to_char(bin_id) is None for bin_id, _, _ in fail_groups):
         raise ValueError("Synthetic PASS/FAIL bins are not encodable.")
 
+    fail_by_coordinate = {
+        coordinate: (bin_id, description)
+        for bin_id, description, group in fail_groups
+        for coordinate in group
+    }
     dies: list[DieRecord] = []
     for row, column in sorted(coordinates):
         coordinate = (row, column)
-        if coordinate in primary_fail_coordinates:
-            soft_bin = 18
-            source_char = primary_fail_char
+        if coordinate in fail_by_coordinate:
+            soft_bin, description = fail_by_coordinate[coordinate]
+            source_char = soft_bin_to_char(soft_bin)
             result = DieResult.FAIL
-            description = "Pout_min"
-        elif coordinate in secondary_fail_coordinates:
-            soft_bin = 20
-            source_char = secondary_fail_char
-            result = DieResult.FAIL
-            description = "Pout_max"
         else:
             soft_bin = 1
             source_char = pass_char
@@ -245,22 +274,15 @@ def generate_pattern_dataset(
             count=passed,
             percentage=passed / tested,
         ),
-        BinRecord(
-            bin=18,
-            char=primary_fail_char,
-            description="Pout_min",
-            count=len(primary_fail_coordinates),
-            percentage=len(primary_fail_coordinates) / tested,
-        ),
     ]
-    if secondary_fail_coordinates:
+    for soft_bin, description, group in fail_groups:
         bins.append(
             BinRecord(
-                bin=20,
-                char=secondary_fail_char,
-                description="Pout_max",
-                count=len(secondary_fail_coordinates),
-                percentage=len(secondary_fail_coordinates) / tested,
+                bin=soft_bin,
+                char=soft_bin_to_char(soft_bin),
+                description=description,
+                count=len(group),
+                percentage=len(group) / tested,
             )
         )
 

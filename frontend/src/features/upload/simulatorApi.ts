@@ -14,6 +14,7 @@ export type SyntheticPattern =
   | 'CLUSTER'
   | 'LINE'
   | 'MULTI_PATTERN'
+  | 'MIXED_FAILURES'
 
 export type DemoLotScenario =
   | 'EDGE_DRIFT'

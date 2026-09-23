@@ -1,0 +1,22 @@
+{
+  "synthetic": true,
+  "seed": 20260924,
+  "tested": 512,
+  "pass": 212,
+  "fail": 300,
+  "bin_counts": {
+    "1": 212,
+    "18": 165,
+    "20": 60,
+    "16": 36,
+    "22": 21,
+    "27": 12,
+    "28": 6
+  },
+  "expected_patterns": {
+    "18": "EDGE",
+    "20": "CENTER",
+    "16": "LOCALIZED_CLUSTER",
+    "22": "RING"
+  }
+}

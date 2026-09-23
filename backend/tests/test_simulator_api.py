@@ -82,3 +82,21 @@ def test_generate_multi_pattern_wafer(client):
     assert counts[18] == 32
     assert counts[20] == 32
     assert response.json()["meta"]["pattern"] == "MULTI_PATTERN"
+
+
+def test_generate_mixed_failure_wafer_and_reject_too_few_failures(client):
+    response = client.post(
+        "/api/v1/simulator/wafer",
+        json={"pattern": "MIXED_FAILURES", "fail_count": 300},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["meta"]["synthetic"] is True
+    assert payload["data"]["summary"]["fail_die"] == 300
+    assert len([item for item in payload["data"]["bins"] if item["bin"] != 1]) == 6
+
+    invalid = client.post(
+        "/api/v1/simulator/wafer",
+        json={"pattern": "MIXED_FAILURES", "fail_count": 5},
+    )
+    assert invalid.status_code == 422

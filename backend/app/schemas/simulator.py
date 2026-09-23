@@ -18,6 +18,7 @@ class SyntheticPattern(StrEnum):
     CLUSTER = "CLUSTER"
     LINE = "LINE"
     MULTI_PATTERN = "MULTI_PATTERN"
+    MIXED_FAILURES = "MIXED_FAILURES"
 
 
 class DemoLotScenario(StrEnum):

@@ -80,7 +80,7 @@ export function UploadPage() {
     mutationFn: async (pattern: SyntheticPattern) => {
       const generated = await generateDemoWafer({
         pattern,
-        fail_count: pattern === 'RANDOM' ? 36 : 48,
+        fail_count: pattern === 'MIXED_FAILURES' ? 300 : pattern === 'RANDOM' ? 36 : 48,
         product_id: 'DEMO_WAFER_PRODUCT',
         lot_id: `DEMO-${pattern}`,
         wafer_id: '01',
@@ -238,7 +238,19 @@ export function UploadPage() {
       >
         <Space direction="vertical" size={12} className="demo-generator">
           <Typography.Text>
-            单片场景用于验证空间 Pattern；演示 Lot 用于验证 Yield 趋势、IQR 异常、Wafer Matrix 与 Mini Map。
+            一张晶圆可同时有多种 Fail Bin，每个 Bin 可能呈现不同空间分布。下面的多失效场景展示这种情况；其余单片场景用于验证指定 Pattern，演示 Lot 用于验证跨片趋势。
+          </Typography.Text>
+          <Button
+            type="primary"
+            icon={<FlaskConical size={16} />}
+            disabled={demoLotMutation.isPending}
+            loading={demoMutation.isPending && demoMutation.variables === 'MIXED_FAILURES'}
+            onClick={() => demoMutation.mutate('MIXED_FAILURES')}
+          >
+            生成单片多失效演示（6 个 Fail Bin）
+          </Button>
+          <Typography.Text type="secondary">
+            合成示例：边缘、中心、局部聚集、环形和离散失效共存；数据与生产样例无对应关系。
           </Typography.Text>
           <Space wrap>
             {demoPatterns.map((pattern) => (

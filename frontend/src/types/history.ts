@@ -1,3 +1,4 @@
+import type { AIReport } from './ai'
 import type { AnalysisSummary } from './analysis'
 import type {
   SourceDescriptor,
@@ -26,6 +27,9 @@ export type AnalysisDetail = AnalysisListItem & {
   analysis: AnalysisSummary
   sources: SourceDescriptor[]
   validation_issues: ValidationIssue[]
+  ai_report: AIReport | null
+  ai_model: string | null
+  ai_generated_at: string | null
 }
 
 export type AnalysisDetailResponse = {

@@ -17,7 +17,7 @@ class AnalysisCreateRequest(BaseModel):
 
 
 class AnalysisListItem(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     id: str
     created_at: datetime

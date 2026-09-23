@@ -5,6 +5,7 @@ import { HistoryPage } from '../features/history/HistoryPage'
 import { LotPage } from '../features/lot/LotPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { UploadPage } from '../features/upload/UploadPage'
+import { WaferPage } from '../features/wafer/WaferPage'
 
 const rootRoute = createRootRoute({ component: AppShell })
 
@@ -33,6 +34,11 @@ const settingsRoute = createRoute({
   path: '/settings',
   component: SettingsPage,
 })
+const waferRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/wafer',
+  component: WaferPage,
+})
 
 const routeTree = rootRoute.addChildren([
   dashboardRoute,
@@ -40,6 +46,7 @@ const routeTree = rootRoute.addChildren([
   historyRoute,
   lotRoute,
   settingsRoute,
+  waferRoute,
 ])
 
 export const router = createRouter({ routeTree, defaultPreload: 'intent' })

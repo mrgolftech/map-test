@@ -6,7 +6,6 @@ import { HistoryPage } from '../features/history/HistoryPage'
 import { LotPage } from '../features/lot/LotPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { UploadPage } from '../features/upload/UploadPage'
-import { WaferPage } from '../features/wafer/WaferPage'
 
 const rootRoute = createRootRoute({ component: AppShell })
 
@@ -79,12 +78,6 @@ const settingsRoute = createRoute({
   path: '/settings',
   component: SettingsPage,
 })
-const waferRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/wafer',
-  component: WaferPage,
-})
-
 function AnalysisDetailRouteComponent() {
   const { analysisId } = analysisDetailRoute.useParams()
   return <AnalysisDetailPage analysisId={analysisId} />
@@ -102,7 +95,6 @@ const routeTree = rootRoute.addChildren([
   historyRoute,
   lotRoute,
   settingsRoute,
-  waferRoute,
   analysisDetailRoute,
 ])
 

@@ -62,6 +62,11 @@ export type SpatialBinStat = {
   max_column_fraction: number | null
 }
 
+export type AnalysisFinding = {
+  kind: 'FACT' | 'JUDGMENT'
+  text: string
+}
+
 export type PatternResult = {
   pattern: string
   soft_bin: number | null
@@ -81,7 +86,7 @@ export type AnalysisSummary = {
   region_stats: Record<string, RegionMetric>
   spatial_by_bin: SpatialBinStat[]
   patterns: PatternResult[]
-  top_findings: string[]
+  top_findings: AnalysisFinding[]
   limitations: string[]
 }
 

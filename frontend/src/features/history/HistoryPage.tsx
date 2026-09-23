@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import {
@@ -69,6 +70,7 @@ export function HistoryPage() {
   const navigate = useNavigate({ from: '/history' })
   const queryClient = useQueryClient()
   const [form] = Form.useForm<FilterForm>()
+  const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([])
 
   const query = useQuery({
     queryKey: ['history', search],
@@ -298,11 +300,39 @@ export function HistoryPage() {
       )}
 
       <div className="section-card">
+        <Space className="history-bulk-actions" wrap>
+          <Button
+            type="primary"
+            disabled={selectedAnalysisIds.length < 2}
+            onClick={() => navigate({
+              to: '/lots',
+              search: {
+                analysis_ids: selectedAnalysisIds.join(','),
+              },
+            })}
+          >
+            对比已选 Wafer ({selectedAnalysisIds.length})
+          </Button>
+          <Typography.Text type="secondary">
+            可勾选 2–25 片历史 Wafer 进行临时比较。
+          </Typography.Text>
+        </Space>
         {query.data?.data.length === 0 && !query.isFetching ? (
           <Empty description="暂无符合条件的分析记录" />
         ) : (
           <Table<AnalysisListItem>
             rowKey="id"
+            rowSelection={{
+              selectedRowKeys: selectedAnalysisIds,
+              onChange: (keys) => setSelectedAnalysisIds(
+                keys.slice(0, 25).map(String),
+              ),
+              getCheckboxProps: (record) => ({
+                disabled:
+                  selectedAnalysisIds.length >= 25
+                  && !selectedAnalysisIds.includes(record.id),
+              }),
+            }}
             columns={columns}
             dataSource={query.data?.data ?? []}
             loading={query.isFetching}

@@ -305,3 +305,50 @@ textarea { font: inherit; }
   margin-top: 10px;
   font-size: 12px;
 }
+
+
+.lot-back-button {
+  margin-top: 4px;
+}
+
+.lot-mini-map-card {
+  height: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.lot-mini-map-title {
+  width: 100%;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.lot-mini-map {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  margin: 0 auto 8px;
+  image-rendering: pixelated;
+  object-fit: contain;
+}
+
+.lot-limitations {
+  margin: 4px 0 0;
+  padding-left: 20px;
+}
+
+.history-bulk-actions {
+  margin-bottom: 12px;
+}
+
+.section-card .ant-table-row {
+  cursor: default;
+}
+
+@media (max-width: 767px) {
+  .lot-mini-map-card {
+    padding: 8px;
+  }
+}

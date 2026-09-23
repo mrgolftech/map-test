@@ -24,7 +24,11 @@ const navigation = [
   },
   {
     key: '/history',
-    label: <Link to="/history">分析历史</Link>,
+    label: (
+      <Link to="/history" search={{ page: 1, page_size: 20 }}>
+        分析历史
+      </Link>
+    ),
     icon: <History size={18} />,
   },
   {

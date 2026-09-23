@@ -30,6 +30,7 @@ import type {
 } from '../../types/analysis'
 import type { DieRecord } from '../../types/wafer'
 import { binColor } from './binColors'
+import { MiniWaferMap } from './MiniWaferMap'
 import { downloadDataUrl, downloadText, waferCsv } from './export'
 import {
   WaferMap,
@@ -85,6 +86,11 @@ export function WaferPage() {
       .filter((item) => (item.description ?? '').toUpperCase().includes('PASS'))
       .map((item) => item.bin),
   )
+
+  const mainFailBins = analysis.bin_stats
+    .filter((item) => !passBins.has(item.soft_bin) && item.count > 0)
+    .sort((left, right) => right.count - left.count)
+    .slice(0, 3)
 
   const binOptions = dataset.bins
     .filter((item) => item.count > 0)
@@ -268,28 +274,48 @@ export function WaferPage() {
   }
 
   const overview = (
-    <Row gutter={[12, 12]}>
-      <Col xs={24} xl={14}>
-        <Card title="确定性结论" size="small">
-          <Space direction="vertical" size={8}>
-            {analysis.top_findings.map((item) => (
-              <Typography.Text key={item}>【事实/判断】{item}</Typography.Text>
+    <Space direction="vertical" size={12} className="wafer-tab-stack">
+      <Row gutter={[12, 12]}>
+        <Col xs={24} xl={14}>
+          <Card title="确定性结论" size="small">
+            <Space direction="vertical" size={8}>
+              {analysis.top_findings.map((item) => (
+                <Typography.Text key={item}>【事实/判断】{item}</Typography.Text>
+              ))}
+            </Space>
+          </Card>
+        </Col>
+        <Col xs={24} xl={10}>
+          <Card title="分析限制" size="small">
+            <Space direction="vertical" size={8}>
+              {analysis.limitations.map((item) => (
+                <Typography.Text type="secondary" key={item}>
+                  {item}
+                </Typography.Text>
+              ))}
+            </Space>
+          </Card>
+        </Col>
+      </Row>
+
+      {mainFailBins.length > 0 && (
+        <Card title="主要 Fail Bin 分布" size="small">
+          <Row gutter={[12, 12]}>
+            {mainFailBins.map((item) => (
+              <Col xs={24} md={8} key={item.soft_bin}>
+                <Card
+                  size="small"
+                  title={`Bin ${item.soft_bin} · ${item.description ?? 'N/A'}`}
+                  extra={<Tag>{item.count}</Tag>}
+                >
+                  <MiniWaferMap dataset={dataset} softBin={item.soft_bin} />
+                </Card>
+              </Col>
             ))}
-          </Space>
+          </Row>
         </Card>
-      </Col>
-      <Col xs={24} xl={10}>
-        <Card title="分析限制" size="small">
-          <Space direction="vertical" size={8}>
-            {analysis.limitations.map((item) => (
-              <Typography.Text type="secondary" key={item}>
-                {item}
-              </Typography.Text>
-            ))}
-          </Space>
-        </Card>
-      </Col>
-    </Row>
+      )}
+    </Space>
   )
 
   const spatial = (

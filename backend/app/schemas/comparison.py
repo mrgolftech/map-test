@@ -58,6 +58,14 @@ class YieldTrendPoint(BaseModel):
     outlier_reason: str | None = None
 
 
+class YieldExtremum(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
+
+    analysis_id: str
+    wafer_id: str | None
+    yield_: float = Field(alias="yield", serialization_alias="yield")
+
+
 class BinTrendPoint(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -155,6 +163,8 @@ class ComparisonData(BaseModel):
     compatibility: CompatibilityResult
     yield_stats: YieldAggregate
     yield_trend: list[YieldTrendPoint]
+    highest_yield_wafers: list[YieldExtremum]
+    lowest_yield_wafers: list[YieldExtremum]
     bin_aggregates: list[BinAggregate]
     pattern_distribution: list[PatternDistributionItem]
     wafers: list[WaferComparisonRow]

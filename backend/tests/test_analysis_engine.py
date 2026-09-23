@@ -68,6 +68,10 @@ def test_enrichment_matches_defined_formula():
         ("EDGE", "EDGE", 48),
         ("CENTER", "CENTER", 48),
         ("RING", "RING", 48),
+        ("TOP", "TOP", 48),
+        ("BOTTOM", "BOTTOM", 48),
+        ("LEFT", "LEFT", 48),
+        ("RIGHT", "RIGHT", 48),
         ("QUADRANT", "QUADRANT", 48),
         ("CLUSTER", "LOCALIZED_CLUSTER", 48),
         ("LINE", "LINE", 24),
@@ -92,3 +96,16 @@ def test_pattern_results_include_numeric_evidence_and_thresholds():
     assert edge.score >= 0.60
     assert any(item.startswith("edge_enrichment=") for item in edge.evidence)
     assert edge.thresholds["enrichment_threshold"] == 1.5
+
+
+def test_multi_pattern_fixture_exposes_two_independent_fail_bins():
+    dataset = generate_pattern_dataset("MULTI_PATTERN", fail_count=64)
+    summary = AnalysisEngine().analyze(dataset)
+
+    assert {item.bin: item.count for item in dataset.bins} == {
+        1: dataset.summary.pass_die,
+        18: 32,
+        20: 32,
+    }
+    assert "EDGE" in _patterns_for(summary, 18)
+    assert "CENTER" in _patterns_for(summary, 20)

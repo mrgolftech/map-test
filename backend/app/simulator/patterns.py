@@ -14,7 +14,20 @@ from app.schemas.wafer import (
 )
 from app.simulator.generator import SyntheticWaferConfig, active_coordinates
 
-PatternName = Literal["RANDOM", "EDGE", "CENTER", "RING", "QUADRANT", "CLUSTER", "LINE"]
+PatternName = Literal[
+    "RANDOM",
+    "EDGE",
+    "CENTER",
+    "RING",
+    "TOP",
+    "BOTTOM",
+    "LEFT",
+    "RIGHT",
+    "QUADRANT",
+    "CLUSTER",
+    "LINE",
+    "MULTI_PATTERN",
+]
 
 
 def _normalized(
@@ -70,6 +83,22 @@ def _select_fail_coordinates(
         )
         return set(ranked[:fail_count])
 
+    if pattern == "TOP":
+        ranked = sorted(coordinates, key=lambda item: geometry[item][1], reverse=True)
+        return set(ranked[:fail_count])
+
+    if pattern == "BOTTOM":
+        ranked = sorted(coordinates, key=lambda item: geometry[item][1])
+        return set(ranked[:fail_count])
+
+    if pattern == "LEFT":
+        ranked = sorted(coordinates, key=lambda item: geometry[item][0])
+        return set(ranked[:fail_count])
+
+    if pattern == "RIGHT":
+        ranked = sorted(coordinates, key=lambda item: geometry[item][0], reverse=True)
+        return set(ranked[:fail_count])
+
     if pattern == "QUADRANT":
         q1 = [
             item
@@ -109,50 +138,132 @@ def generate_pattern_dataset(
     *,
     seed: int = 20260924,
     fail_count: int = 48,
+    rows: int = 24,
+    columns: int = 32,
 ) -> WaferDataset:
     config = SyntheticWaferConfig(
         product_id=f"DEMO_{pattern}",
         lot_id="PATTERN001",
         wafer_id="01",
         seed=seed,
+        rows=rows,
+        columns=columns,
         bins=[],
     )
     coordinates = active_coordinates(config)
     if fail_count <= 0 or fail_count >= len(coordinates):
         raise ValueError("fail_count must leave both PASS and FAIL dies.")
+    if pattern == "MULTI_PATTERN" and fail_count < 2:
+        raise ValueError("MULTI_PATTERN requires at least two failing dies.")
 
-    fail_coordinates = _select_fail_coordinates(
-        pattern,
-        coordinates,
-        fail_count=fail_count,
-        seed=seed,
-    )
-    if len(fail_coordinates) != fail_count:
+    primary_fail_coordinates: set[tuple[int, int]]
+    secondary_fail_coordinates: set[tuple[int, int]] = set()
+    if pattern == "MULTI_PATTERN":
+        primary_count = fail_count // 2
+        secondary_count = fail_count - primary_count
+        primary_fail_coordinates = _select_fail_coordinates(
+            "EDGE",
+            coordinates,
+            fail_count=primary_count,
+            seed=seed,
+        )
+        remaining = [
+            coordinate
+            for coordinate in coordinates
+            if coordinate not in primary_fail_coordinates
+        ]
+        secondary_fail_coordinates = _select_fail_coordinates(
+            "CENTER",
+            remaining,
+            fail_count=secondary_count,
+            seed=seed + 1,
+        )
+    else:
+        primary_fail_coordinates = _select_fail_coordinates(
+            pattern,
+            coordinates,
+            fail_count=fail_count,
+            seed=seed,
+        )
+
+    if (
+        len(primary_fail_coordinates)
+        + len(secondary_fail_coordinates)
+        != fail_count
+    ):
         raise ValueError(
             f"Pattern {pattern} cannot provide {fail_count} unique fail coordinates."
         )
 
     pass_char = soft_bin_to_char(1)
-    fail_char = soft_bin_to_char(18)
-    if pass_char is None or fail_char is None:
+    primary_fail_char = soft_bin_to_char(18)
+    secondary_fail_char = soft_bin_to_char(20)
+    if (
+        pass_char is None
+        or primary_fail_char is None
+        or secondary_fail_char is None
+    ):
         raise ValueError("Synthetic PASS/FAIL bins are not encodable.")
 
     dies: list[DieRecord] = []
     for row, column in sorted(coordinates):
-        failed = (row, column) in fail_coordinates
+        coordinate = (row, column)
+        if coordinate in primary_fail_coordinates:
+            soft_bin = 18
+            source_char = primary_fail_char
+            result = DieResult.FAIL
+            description = "Pout_min"
+        elif coordinate in secondary_fail_coordinates:
+            soft_bin = 20
+            source_char = secondary_fail_char
+            result = DieResult.FAIL
+            description = "Pout_max"
+        else:
+            soft_bin = 1
+            source_char = pass_char
+            result = DieResult.PASS
+            description = "PASS"
+
         dies.append(
             DieRecord(
                 row=row,
                 column=column,
-                source_char=fail_char if failed else pass_char,
-                soft_bin=18 if failed else 1,
-                result=DieResult.FAIL if failed else DieResult.PASS,
-                description="Pout_min" if failed else "PASS",
+                source_char=source_char,
+                soft_bin=soft_bin,
+                result=result,
+                description=description,
             )
         )
 
     tested = len(dies)
     passed = tested - fail_count
+    bins = [
+        BinRecord(
+            bin=1,
+            char=pass_char,
+            description="PASS",
+            count=passed,
+            percentage=passed / tested,
+        ),
+        BinRecord(
+            bin=18,
+            char=primary_fail_char,
+            description="Pout_min",
+            count=len(primary_fail_coordinates),
+            percentage=len(primary_fail_coordinates) / tested,
+        ),
+    ]
+    if secondary_fail_coordinates:
+        bins.append(
+            BinRecord(
+                bin=20,
+                char=secondary_fail_char,
+                description="Pout_max",
+                count=len(secondary_fail_coordinates),
+                percentage=len(secondary_fail_coordinates) / tested,
+            )
+        )
+
     return WaferDataset(
         metadata=WaferMetadata(
             product_id=config.product_id,
@@ -170,22 +281,7 @@ def generate_pattern_dataset(
             columns=config.columns,
         ),
         dies=dies,
-        bins=[
-            BinRecord(
-                bin=1,
-                char=pass_char,
-                description="PASS",
-                count=passed,
-                percentage=passed / tested,
-            ),
-            BinRecord(
-                bin=18,
-                char=fail_char,
-                description="Pout_min",
-                count=fail_count,
-                percentage=fail_count / tested,
-            ),
-        ],
+        bins=bins,
         summary=WaferSummary(
             tested_die=tested,
             pass_die=passed,

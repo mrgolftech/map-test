@@ -3,6 +3,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.ai import AIReport
 from app.schemas.analysis import AnalysisSummary
 from app.schemas.parsing import SourceDescriptor, ValidationIssue
 from app.schemas.wafer import WaferDataset
@@ -43,6 +44,9 @@ class AnalysisDetail(AnalysisListItem):
     analysis: AnalysisSummary
     sources: list[SourceDescriptor]
     validation_issues: list[ValidationIssue]
+    ai_report: AIReport | None = None
+    ai_model: str | None = None
+    ai_generated_at: datetime | None = None
 
 
 class PaginationMeta(BaseModel):

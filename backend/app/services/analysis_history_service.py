@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from pydantic import TypeAdapter
@@ -9,6 +9,7 @@ from app.analysis.engine import AnalysisEngine
 from app.core.errors import AppError
 from app.db.models import AnalysisRecord
 from app.repositories.analysis_repository import AnalysisRepository
+from app.schemas.ai import AIReport
 from app.schemas.analysis import AnalysisSummary
 from app.schemas.history import (
     AnalysisCreateRequest,
@@ -108,6 +109,26 @@ class AnalysisHistoryService:
             )
         return self._to_detail(record)
 
+    def save_ai_report(
+        self,
+        analysis_id: str,
+        *,
+        model: str,
+        report: AIReport,
+    ) -> AnalysisDetail:
+        record = self._repository.get(analysis_id)
+        if record is None:
+            raise AppError(
+                code="ANALYSIS_NOT_FOUND",
+                message="Analysis record was not found.",
+                status_code=404,
+                details={"analysis_id": analysis_id},
+            )
+        record.ai_report_json = report.model_dump_json()
+        record.ai_model = model
+        record.ai_generated_at = datetime.now(UTC)
+        return self._to_detail(self._repository.save(record))
+
     def delete(self, analysis_id: str) -> None:
         record = self._repository.get(analysis_id)
         if record is None:
@@ -196,4 +217,11 @@ class AnalysisHistoryService:
             validation_issues=_validation_adapter.validate_json(
                 record.validation_json
             ),
+            ai_report=(
+                AIReport.model_validate_json(record.ai_report_json)
+                if record.ai_report_json
+                else None
+            ),
+            ai_model=record.ai_model,
+            ai_generated_at=record.ai_generated_at,
         )

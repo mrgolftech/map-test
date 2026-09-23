@@ -136,6 +136,13 @@ def test_ai_analyze_uses_persisted_analysis_summary(client, monkeypatch):
     assert data["report"]["possible_causes"][0]["kind"] == "HYPOTHESIS"
     assert data["report"]["recommended_checks"][0]["kind"] == "RECOMMENDATION"
 
+    restored = client.get(f"/api/v1/analyses/{analysis_id}")
+    assert restored.status_code == 200
+    detail = restored.json()["data"]
+    assert detail["ai_model"] == "demo-model"
+    assert detail["ai_generated_at"] is not None
+    assert detail["ai_report"] == data["report"]
+
 
 def test_ai_invalid_schema_is_explicit_error(client, monkeypatch):
     configure_llm(monkeypatch)

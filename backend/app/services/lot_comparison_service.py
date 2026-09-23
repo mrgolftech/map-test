@@ -21,6 +21,7 @@ from app.schemas.comparison import (
     WaferComparisonRow,
     WaferMapPreview,
     YieldAggregate,
+    YieldExtremum,
     YieldTrendPoint,
 )
 from app.schemas.wafer import WaferDataset
@@ -279,6 +280,8 @@ class LotComparisonService:
             for item in loaded
         ]
 
+        highest_yield_wafers, lowest_yield_wafers = self._yield_extrema(loaded)
+
         rows = [
             self._row(
                 item,
@@ -307,6 +310,8 @@ class LotComparisonService:
             compatibility=compatibility,
             yield_stats=yield_stats,
             yield_trend=yield_trend,
+            highest_yield_wafers=highest_yield_wafers,
+            lowest_yield_wafers=lowest_yield_wafers,
             bin_aggregates=self._bin_aggregates(loaded),
             pattern_distribution=self._pattern_distribution(loaded),
             wafers=rows,
@@ -413,6 +418,39 @@ class LotComparisonService:
                 },
             )
         )
+
+    @staticmethod
+    def _yield_extrema(
+        loaded: list[_LoadedAnalysis],
+    ) -> tuple[list[YieldExtremum], list[YieldExtremum]]:
+        with_yield = [
+            (float(item.dataset.summary.yield_), item)
+            for item in loaded
+            if item.dataset.summary.yield_ is not None
+        ]
+        if not with_yield:
+            return [], []
+
+        highest = max(value for value, _ in with_yield)
+        lowest = min(value for value, _ in with_yield)
+
+        def rows_for(target: float) -> list[YieldExtremum]:
+            matches = [
+                item
+                for value, item in with_yield
+                if abs(value - target) <= 1e-12
+            ]
+            matches.sort(key=lambda item: (item.test_time, item.record.id))
+            return [
+                YieldExtremum(
+                    analysis_id=item.record.id,
+                    wafer_id=item.dataset.metadata.wafer_id,
+                    yield_=target,
+                )
+                for item in matches
+            ]
+
+        return rows_for(highest), rows_for(lowest)
 
     @staticmethod
     def _yield_stats(

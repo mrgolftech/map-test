@@ -48,6 +48,9 @@ def test_compare_analyses_returns_yield_bin_spatial_and_preview(client):
     assert data["yield_stats"]["wafer_count"] == 2
     assert data["yield_stats"]["average"] is not None
     assert len(data["yield_trend"]) == 2
+    assert [item["wafer_id"] for item in data["highest_yield_wafers"]] == ["01"]
+    assert [item["wafer_id"] for item in data["lowest_yield_wafers"]] == ["02"]
+    assert data["highest_yield_wafers"][0]["yield"] > data["lowest_yield_wafers"][0]["yield"]
 
     bin18 = next(
         item for item in data["bin_aggregates"]
@@ -239,3 +242,19 @@ def test_lot_id_requires_product_when_ambiguous(client):
 
     assert response.status_code == 409
     assert response.json()["error"]["code"] == "LOT_AMBIGUOUS"
+
+
+def test_yield_extrema_preserve_ties(client):
+    first = persist(client, wafer_id="01", fail_count=32)
+    second = persist(client, wafer_id="02", fail_count=32)
+    third = persist(client, wafer_id="03", fail_count=80)
+
+    response = client.post(
+        "/api/v1/analyses/compare",
+        json={"analysis_ids": [first["id"], second["id"], third["id"]]},
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert {item["wafer_id"] for item in data["highest_yield_wafers"]} == {"01", "02"}
+    assert [item["wafer_id"] for item in data["lowest_yield_wafers"]] == ["03"]

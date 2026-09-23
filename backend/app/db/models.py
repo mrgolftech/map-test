@@ -38,6 +38,12 @@ class AnalysisRecord(Base):
     analysis_summary_json: Mapped[str] = mapped_column(Text, nullable=False)
     sources_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     validation_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    ai_report_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    ai_generated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
 
     __table_args__ = (
         Index("ix_analysis_created_at", "created_at"),

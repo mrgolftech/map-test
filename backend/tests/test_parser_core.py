@@ -99,3 +99,47 @@ def test_detector_rejects_ambiguous_content():
         detector.detect(RawSource("ambiguous.txt", b"synthetic"))
 
     assert exc_info.value.code == "FORMAT_AMBIGUOUS"
+
+
+def test_golden_pat_only_is_valid_and_preserves_counts():
+    service = FileParseService(get_settings())
+    result = service.parse_sources(
+        [RawSource("SYNTH001.01.PAT", fixture_bytes("SYNTH001.01.PAT"))]
+    )
+
+    assert result.status == ParseStatus.VALID
+    assert result.dataset is not None
+    assert result.dataset.metadata.rows == 24
+    assert result.dataset.metadata.columns == 32
+    assert result.dataset.summary.tested_die == 512
+    assert result.dataset.summary.pass_die == 358
+    assert result.dataset.summary.fail_die == 154
+
+
+def test_golden_cp_only_is_valid_and_preserves_counts():
+    service = FileParseService(get_settings())
+    result = service.parse_sources(
+        [
+            RawSource(
+                "SYNTH001_20260101090000.CP1",
+                fixture_bytes("SYNTH001_20260101090000.CP1"),
+            )
+        ]
+    )
+
+    assert result.status == ParseStatus.VALID
+    assert result.dataset is not None
+    assert result.dataset.metadata.product_id == "DEMO_RFIC_A"
+    assert result.dataset.summary.tested_die == 512
+    assert result.dataset.summary.pass_die == 358
+    assert result.dataset.summary.fail_die == 154
+
+
+@pytest.mark.parametrize("filename", ["not-a-map.PAT", "not-a-map.CP1"])
+def test_detector_does_not_trust_extension_without_content(filename: str):
+    detector = FormatDetector([PatParser(), CpParser()])
+
+    with pytest.raises(DetectionFailure) as exc_info:
+        detector.detect(RawSource(filename, b"plain text that is not a wafer map\n"))
+
+    assert exc_info.value.code == "FORMAT_UNSUPPORTED"

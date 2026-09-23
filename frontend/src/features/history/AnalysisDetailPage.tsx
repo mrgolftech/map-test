@@ -71,11 +71,21 @@ export function AnalysisDetailPage({
         dataset: query.data.data.dataset,
         analysis: query.data.data.analysis,
       }}
+      aiReport={query.data.data.ai_report}
+      aiModel={query.data.data.ai_model}
+      aiGeneratedAt={query.data.data.ai_generated_at}
       extraTabs={[
         {
           key: 'ai',
           label: 'AI 分析',
-          children: <AIAnalysisPanel analysisId={analysisId} />,
+          children: (
+            <AIAnalysisPanel
+              analysisId={analysisId}
+              initialReport={query.data.data.ai_report}
+              initialModel={query.data.data.ai_model}
+              initialGeneratedAt={query.data.data.ai_generated_at}
+            />
+          ),
         },
       ]}
       extraActions={(

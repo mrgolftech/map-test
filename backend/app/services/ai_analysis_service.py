@@ -88,7 +88,8 @@ class AIAnalysisService:
         )
 
     def analyze(self, analysis_id: str) -> AIAnalyzeResult:
-        detail = AnalysisHistoryService(self._session).get(analysis_id)
+        history = AnalysisHistoryService(self._session)
+        detail = history.get(analysis_id)
         provider = self._get_provider()
         raw = provider.complete(
             system_prompt=SYSTEM_PROMPT,
@@ -107,8 +108,14 @@ class AIAnalysisService:
                 details={"error_type": type(exc).__name__},
             ) from exc
 
+        model = self._settings.llm_model or "unknown"
+        history.save_ai_report(
+            analysis_id,
+            model=model,
+            report=report,
+        )
         return AIAnalyzeResult(
             analysis_id=analysis_id,
-            model=self._settings.llm_model or "unknown",
+            model=model,
             report=report,
         )

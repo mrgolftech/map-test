@@ -352,3 +352,24 @@ textarea { font: inherit; }
     padding: 8px;
   }
 }
+
+
+.ai-report-stack {
+  width: 100%;
+}
+
+.ai-report-item {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.ai-report-detail {
+  margin: 4px 0 !important;
+}
+
+.ai-confidence {
+  width: min(320px, 100%);
+}

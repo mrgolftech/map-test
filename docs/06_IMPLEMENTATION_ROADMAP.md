@@ -94,7 +94,7 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 - cross-file assembly tests；
 - validation code tests；
 - Simulator → serialize → Parser → canonical facts round-trip；
-- 私有真实样例在受控环境做一次外部交叉验证，但不得提交 Git。
+- 既有 PAT/CP 文件仅用于确认格式结构；测试数据必须重新生成并脱敏，不把其具体 Wafer 数据作为产品真值或提交 Git。
 
 ### Phase 1 退出条件
 
@@ -105,7 +105,7 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 3. 多源字段冲突不会被静默覆盖；
 4. tested / pass / fail / bin / rows / columns / notch 等 canonical facts 可回归；
 5. Simulator round-trip invariant 通过；
-6. 私有实际样例的关键统计与既有人工/工具结果一致；
+6. 基于已知 PAT/CP 样例格式生成的独立 synthetic golden fixture 与预设事实一致；
 7. backend tests、frontend existing tests、Docker build 全部 CI 通过。
 
 明确不进入 Phase 1：

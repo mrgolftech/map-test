@@ -129,7 +129,7 @@ def test_golden_cp_only_is_valid_and_preserves_counts():
 
     assert result.status == ParseStatus.VALID
     assert result.dataset is not None
-    assert result.dataset.metadata.product_id == "DEMO_PRODUCT"
+    assert result.dataset.metadata.product_id == "DEMO_RFIC_A"
     assert result.dataset.summary.tested_die == 512
     assert result.dataset.summary.pass_die == 358
     assert result.dataset.summary.fail_die == 154

@@ -40,6 +40,9 @@ class PatParser(BaseParser):
         try:
             text = decode_text(source)
         except UnicodeDecodeError:
+            if Path(source.filename).suffix.lower() == ".pat":
+                score = max(score, 0.65)
+                evidence.append("extension routes undecodable content to PAT validation")
             return DetectionResult(
                 parser_id=self.parser_id,
                 detected_format=self.detected_format,

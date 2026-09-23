@@ -102,14 +102,19 @@ export function UploadPage() {
   const demoLotMutation = useMutation({
     mutationFn: async (scenario: DemoLotScenario) => {
       const generated = await generateDemoLot(scenario)
-      for (const dataset of generated.data.datasets) {
+      const lotId = `${generated.data.datasets[0]?.metadata.lot_id ?? `DEMO-${scenario}`}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+      const datasets = generated.data.datasets.map((dataset) => ({
+        ...dataset,
+        metadata: { ...dataset.metadata, lot_id: lotId },
+      }))
+      for (const dataset of datasets) {
         await createAnalysis({
           dataset,
           sources: [],
           validation_issues: [],
         })
       }
-      return generated
+      return { ...generated, data: { ...generated.data, datasets } }
     },
     onSuccess: (response) => {
       const first = response.data.datasets[0]

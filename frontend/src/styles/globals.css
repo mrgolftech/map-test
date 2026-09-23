@@ -171,7 +171,7 @@ textarea { font: inherit; }
   margin-top: 12px;
 }
 
-.wafer-main-grid .ant-card {
+.wafer-main-grid > .ant-col:first-child > .ant-card {
   height: 100%;
 }
 
@@ -264,6 +264,19 @@ textarea { font: inherit; }
 }
 
 @media (max-width: 767px) {
+  .wafer-main-grid > .ant-col:first-child .ant-card-head-wrapper {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .wafer-main-grid > .ant-col:first-child .ant-card-head-title {
+    flex: none;
+  }
+
+  .wafer-main-grid > .ant-col:first-child .ant-card-extra {
+    margin-inline-start: 0;
+  }
+
   .wafer-map-controls {
     align-items: stretch;
     flex-direction: column;

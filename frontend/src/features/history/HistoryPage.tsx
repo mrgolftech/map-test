@@ -327,8 +327,10 @@ export function HistoryPage() {
               onChange: (keys) => setSelectedAnalysisIds(
                 keys.slice(0, 25).map(String),
               ),
-              getCheckboxProps: () => ({
-                disabled: selectedAnalysisIds.length >= 25,
+              getCheckboxProps: (record) => ({
+                disabled:
+                  selectedAnalysisIds.length >= 25
+                  && !selectedAnalysisIds.includes(record.id),
               }),
             }}
             columns={columns}

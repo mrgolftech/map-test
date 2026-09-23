@@ -1,9 +1,9 @@
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.parsing import ValidationIssue
-from app.schemas.wafer import WaferMetadata, WaferSummary
+from app.schemas.wafer import WaferDataset, WaferMetadata, WaferSummary
 
 
 class AnalysisConfig(BaseModel):
@@ -110,5 +110,5 @@ class AnalysisSummary(BaseModel):
 class AnalysisRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    dataset: Any
+    dataset: WaferDataset
     config: AnalysisConfig | None = None

@@ -19,7 +19,6 @@ import {
 } from 'antd'
 import { Eye, Filter, RotateCcw, Trash2 } from 'lucide-react'
 import { PageHeader } from '../../components/common/PageHeader'
-import type { HistorySearch } from '../../app/router'
 import type { AnalysisListItem } from '../../types/history'
 import { deleteAnalysis, listAnalyses } from './api'
 

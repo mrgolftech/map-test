@@ -289,3 +289,19 @@ textarea { font: inherit; }
 .wafer-map-canvas-compact {
   min-height: 180px;
 }
+
+
+.full-width {
+  width: 100%;
+}
+
+.history-filter-card {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-panel);
+}
+
+.history-note {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+}

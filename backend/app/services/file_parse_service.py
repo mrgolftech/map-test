@@ -75,6 +75,14 @@ class FileParseService:
                     },
                 )
 
+            if not content:
+                raise AppError(
+                    code="UPLOAD_EMPTY_FILE",
+                    message="Uploaded wafer source is empty.",
+                    status_code=422,
+                    details={"filename": filename},
+                )
+
             total_size += len(content)
             if total_size > self._settings.upload_max_total_bytes:
                 raise AppError(

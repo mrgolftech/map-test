@@ -120,19 +120,78 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 
 ## Phase 2 — Single Wafer Analysis
 
-- Yield；
-- Bin；
-- region；
-- enrichment；
-- cluster；
-- pattern v1；
-- Wafer Map；
-- Bin filtering；
-- Die tooltip；
-- PNG / CSV；
-- 单片详情页。
+### Deterministic analysis
 
-退出条件：无 AI 也能完整完成一片 Wafer 的工程分析。
+- AnalysisSummary v1；
+- Yield / Bin / fail share；
+- Center / Mid / Edge；
+- Top / Bottom / Left / Right；
+- Q1–Q4；
+- Edge / Center / directional enrichment；
+- 8-neighbor connected component；
+- largest component / component count / cluster ratio；
+- row / column concentration；
+- Pattern v1：EDGE / CENTER / RING / directional / QUADRANT / LOCALIZED_CLUSTER / LINE / RANDOM；
+- FACT / JUDGMENT typed findings；
+- analysis limitations；
+- `POST /api/v1/analysis`；
+- analysis boundary canonical re-validation。
+
+### Simulator / tests
+
+- Edge；
+- Center；
+- Ring；
+- Quadrant；
+- Cluster；
+- Line；
+- 固定 seed；
+- region/bin count conservation；
+- enrichment formula；
+- connected component exact fixture；
+- API invalid-dataset regression。
+
+### Single Wafer UI
+
+- `/wafer` detail page；
+- ECharts custom-series Canvas Wafer Map；
+- stable Soft Bin colors；
+- PASS / FAIL；
+- multi-Bin 联合筛选；
+- 非目标 Bin 灰化；
+- zoom / pan / reset；
+- Row / Column toggle；
+- Notch indicator；
+- Die click Drawer；
+- Bin legend interaction；
+- major Fail Bin Mini Wafer Map；
+- Overview / Spatial / Bin；
+- PNG / CSV export；
+- desktop / notebook / mobile basic view。
+
+Phase 2 在 Phase 3 持久化前使用 sessionStorage 保存“当前 Wafer 工作区”，它不是历史存储方案。
+
+### Phase 2 退出条件
+
+必须同时满足：
+
+1. 无 AI 可完成单 Wafer 解析 → 确定性分析 → 交互查看；
+2. Yield / Bin / Region / Enrichment / Cluster 有固定回归；
+3. Edge / Center / Ring / Quadrant / Cluster / Line synthetic scenario 可被算法识别；
+4. Pattern evidence 与 thresholds 随结果返回；
+5. Wafer Map 支持 Die、Bin、PASS/FAIL、Tooltip/Drawer、zoom/pan、Notch、PNG/CSV；
+6. 主要 Fail Bin 可生成 Mini Wafer Map；
+7. invalid canonical dataset 无法进入 Analysis；
+8. frontend lint/typecheck/test/build、backend lint/pytest、Docker CI 全绿。
+
+明确不进入 Phase 2：
+
+- 数据库历史；
+- Lot compare；
+- DBSCAN；
+- Moran's I；
+- arbitrary-angle scratch fitting；
+- AI。
 
 ## Phase 3 — Persistence / History
 

@@ -9,6 +9,8 @@ os.environ["STATIC_DIR"] = "./.missing-static"
 
 from app.core.config import get_settings  # noqa: E402
 from app.db import session as db_session  # noqa: E402
+from app.db.base import Base  # noqa: E402
+from app.db import models as db_models  # noqa: E402, F401
 from app.main import create_app  # noqa: E402
 
 
@@ -17,10 +19,15 @@ def reset_state(tmp_path: Path):
     os.environ["DATABASE_URL"] = f"sqlite:///{tmp_path / 'test.db'}"
     get_settings.cache_clear()
     db_session._engine = None
+
+    engine = db_session.get_engine()
+    Base.metadata.create_all(engine)
+
     yield
-    if db_session._engine is not None:
-        db_session._engine.dispose()
-        db_session._engine = None
+
+    Base.metadata.drop_all(engine)
+    engine.dispose()
+    db_session._engine = None
     get_settings.cache_clear()
 
 

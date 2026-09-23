@@ -273,7 +273,12 @@ export const WaferMap = forwardRef<WaferMapHandle, WaferMapProps>(
     ])
 
     return (
-      <div className="wafer-map-frame">
+      <div
+        className="wafer-map-frame"
+        style={{
+          aspectRatio: `${dataset.metadata.columns} / ${dataset.metadata.rows}`,
+        }}
+      >
         <div
           ref={containerRef}
           className="wafer-map-canvas"

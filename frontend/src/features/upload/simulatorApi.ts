@@ -6,9 +6,14 @@ export type SyntheticPattern =
   | 'EDGE'
   | 'CENTER'
   | 'RING'
+  | 'TOP'
+  | 'BOTTOM'
+  | 'LEFT'
+  | 'RIGHT'
   | 'QUADRANT'
   | 'CLUSTER'
   | 'LINE'
+  | 'MULTI_PATTERN'
 
 export type DemoLotScenario =
   | 'EDGE_DRIFT'

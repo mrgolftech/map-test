@@ -5,7 +5,7 @@ from app.schemas.parsing import (
     ValidationSeverity,
     ValidationStage,
 )
-from app.schemas.wafer import WaferDataset
+from app.schemas.wafer import DieResult, WaferDataset
 
 
 def validate_dataset(dataset: WaferDataset) -> list[ValidationIssue]:
@@ -62,6 +62,30 @@ def validate_dataset(dataset: WaferDataset) -> list[ValidationIssue]:
                     "tested": summary.tested_die,
                     "pass": summary.pass_die,
                     "fail": summary.fail_die,
+                },
+            )
+        )
+
+    actual_pass = sum(1 for die in dataset.dies if die.result == DieResult.PASS)
+    actual_fail = sum(1 for die in dataset.dies if die.result == DieResult.FAIL)
+    actual_unknown = sum(1 for die in dataset.dies if die.result == DieResult.UNKNOWN)
+    if (
+        actual_pass != summary.pass_die
+        or actual_fail != summary.fail_die
+        or actual_unknown != 0
+    ):
+        issues.append(
+            ValidationIssue(
+                severity=ValidationSeverity.ERROR,
+                stage=ValidationStage.CANONICAL,
+                code="CANONICAL_RESULT_COUNT_MISMATCH",
+                message="Die PASS/FAIL results do not match canonical summary.",
+                details={
+                    "summary_pass": summary.pass_die,
+                    "actual_pass": actual_pass,
+                    "summary_fail": summary.fail_die,
+                    "actual_fail": actual_fail,
+                    "unknown": actual_unknown,
                 },
             )
         )

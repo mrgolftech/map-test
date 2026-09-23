@@ -61,7 +61,6 @@ export function SettingsPage() {
             column={{ xs: 1, md: 2 }}
             bordered
             size="small"
-            loading={configQuery.isPending}
           >
             <Descriptions.Item label="状态">
               <Tag color={config?.configured ? 'success' : 'default'}>

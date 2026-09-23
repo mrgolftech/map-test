@@ -27,7 +27,7 @@ jobs:
       - name: Commit lockfile when changed
         working-directory: .
         run: |
-          if git diff --quiet -- frontend/package-lock.json; then
+          if [ -z "$(git status --porcelain -- frontend/package-lock.json)" ]; then
             exit 0
           fi
           git config user.name "github-actions[bot]"

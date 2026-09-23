@@ -80,6 +80,13 @@ class SpatialBinStat(BaseModel):
     max_column_fraction: float | None
 
 
+class AnalysisFinding(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["FACT", "JUDGMENT"]
+    text: str
+
+
 class PatternResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -103,7 +110,7 @@ class AnalysisSummary(BaseModel):
     region_stats: dict[str, RegionMetric]
     spatial_by_bin: list[SpatialBinStat]
     patterns: list[PatternResult]
-    top_findings: list[str]
+    top_findings: list[AnalysisFinding]
     limitations: list[str]
 
 

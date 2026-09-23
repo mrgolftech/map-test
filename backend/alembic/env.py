@@ -1,10 +1,11 @@
 from logging.config import fileConfig
 
 from alembic import context
-from app.core.config import get_settings
-from app.db.base import Base
-from app.db import models as db_models  # noqa: F401
 from sqlalchemy import engine_from_config, pool
+
+from app.core.config import get_settings
+from app.db import models as db_models  # noqa: F401
+from app.db.base import Base
 
 config = context.config
 config.set_main_option("sqlalchemy.url", get_settings().database_url)

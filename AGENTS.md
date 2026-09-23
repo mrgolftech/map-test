@@ -27,6 +27,7 @@
 5. `docs/04_DATA_MODEL_PARSING_AND_ANALYSIS.md`
 6. `docs/05_ENGINEERING_TEST_AND_DELIVERY.md`
 7. `docs/06_IMPLEMENTATION_ROADMAP.md`
+8. `docs/07_REFERENCE_PROJECTS_AND_ADOPTED_PRACTICES.md`
 
 产品、架构、数据契约或 UI 基线发生变化时，必须同步相应文档。
 
@@ -78,14 +79,30 @@ AI 不能替代 Parser、统计或空间算法。
 
 ## 6. Parser 强制规则
 
-Parser 使用 plugin 模式：
+Parser 使用 plugin + assembler 模式：
+
+```text
+Source File(s)
+→ detector.py
+→ pat_parser.py / cp_parser.py / future parser
+→ SourceParseResult[]
+→ assembler.py
+→ WaferDataset
+→ canonical validation
+→ ParseResult
+```
+
+目录至少包含：
 
 ```text
 base.py
 detector.py
 pat_parser.py
 cp_parser.py
+assembler.py
 ```
+
+不得假设单个源文件一定包含构造完整 WaferDataset 所需的全部信息；PAT / CP 应先独立解析，再由 assembler 关联。
 
 必须保留：
 
@@ -106,6 +123,10 @@ cp_parser.py
 - unknown char。
 
 异常必须显式返回 ValidationIssue。
+
+格式探测必须给出可解释 evidence；扩展名只能作为证据之一。检测结果冲突或歧义时必须显式报错，不得猜测。
+
+Parser 不直接承担空间统计、Renderer 或持久化职责。
 
 ## 7. Analysis 强制规则
 
@@ -346,3 +367,17 @@ reproduce
 - 改空间区域算法定义。
 
 如确需修改，先说明问题、影响、迁移方式和测试计划，再同步文档与实现。
+
+
+## 20. 参考项目使用纪律
+
+实现 Parser、Wafer Renderer、空间分析或 Lot 比较前，可参考 `docs/07_REFERENCE_PROJECTS_AND_ADOPTED_PRACTICES.md` 中登记的上游项目。
+
+强制规则：
+
+- map-test 实际需求、源码与真实文件语义优先；
+- 参考项目只用于借鉴成熟工程实践、测试方法和领域概念；
+- 不因为参考项目已有某功能就扩大当前阶段范围；
+- 不自动引入其依赖、框架或技术栈；
+- 复制代码前必须确认许可证；无明确许可证默认只参考思路；
+- PAT / CP 私有格式不得根据公开 STDF/ATDF 项目猜测字段语义。

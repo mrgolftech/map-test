@@ -129,15 +129,16 @@ Parser / Assembler 不输出前端 ViewModel。
 3. 已知字符映射；
 4. Map 字符统计 vs Bin Count；
 5. tested = pass + fail；
-6. pass / fail 不重复；
-7. PAT / CP 关联时 Product / Lot / Wafer 等关键字段；
-8. Notch 合法性；
-9. 坐标唯一；
-10. 空文件 / 无 Die；
-11. detector 内容证据与扩展名矛盾；
-12. 多源字段合并冲突；
-13. SourceDescriptor checksum / size 合法；
-14. map 外空白与 tested die 不混淆。
+6. dies[].result 的实际 PASS / FAIL 数量必须与 summary 一致，UNKNOWN 不得混入 tested die；
+7. pass / fail 不重复；
+8. PAT / CP 关联时 Product / Lot / Wafer 等关键字段；
+9. Notch 合法性；
+10. 坐标唯一；
+11. 空文件 / 无 Die；
+12. detector 内容证据与扩展名矛盾；
+13. 多源字段合并冲突；
+14. SourceDescriptor checksum / size 合法；
+15. map 外空白与 tested die 不混淆。
 
 禁止为了“跑通”自动删除、填补或篡改异常 Die。
 

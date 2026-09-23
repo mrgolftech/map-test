@@ -1,7 +1,9 @@
+from collections.abc import Generator
 from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
+from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
 
@@ -37,3 +39,8 @@ def get_engine() -> Engine:
             pool_pre_ping=True,
         )
     return _engine
+
+
+def get_session() -> Generator[Session, None, None]:
+    with Session(get_engine()) as session:
+        yield session

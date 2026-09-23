@@ -56,7 +56,10 @@ jobs:
       - run: docker run -d --rm --name map-test-ci -p 8000:8000 map-test:ci
       - run: |
           for i in {1..20}; do
-            if curl --fail --silent http://127.0.0.1:8000/api/v1/health; then exit 0; fi
+            if curl --fail --silent http://127.0.0.1:8000/api/v1/health; then
+              curl --fail --silent "http://127.0.0.1:8000/api/v1/analyses?page=1&page_size=1"
+              exit 0
+            fi
             sleep 1
           done
           docker logs map-test-ci

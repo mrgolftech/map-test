@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import {
   Alert,
   Button,
+  Card,
   Col,
   Descriptions,
   Flex,
@@ -18,12 +19,28 @@ import {
   type UploadFile,
   type UploadProps,
 } from 'antd'
-import { BarChart3, FileSearch, UploadCloud } from 'lucide-react'
+import { BarChart3, FileSearch, FlaskConical, Layers3, UploadCloud } from 'lucide-react'
 import { ApiError } from '../../api/client'
 import { PageHeader } from '../../components/common/PageHeader'
 import type { SourceDescriptor, ValidationIssue } from '../../types/wafer'
 import { createAnalysis } from '../history/api'
 import { parseWaferFiles } from './api'
+import {
+  generateDemoLot,
+  generateDemoWafer,
+  type DemoLotScenario,
+  type SyntheticPattern,
+} from './simulatorApi'
+
+const demoPatterns: SyntheticPattern[] = [
+  'EDGE',
+  'CENTER',
+  'RING',
+  'QUADRANT',
+  'CLUSTER',
+  'LINE',
+  'RANDOM',
+]
 
 const statusColor = {
   VALID: 'success',
@@ -50,6 +67,53 @@ export function UploadPage() {
       navigate({
         to: '/analyses/$analysisId',
         params: { analysisId: response.data.id },
+      })
+    },
+  })
+
+  const demoMutation = useMutation({
+    mutationFn: async (pattern: SyntheticPattern) => {
+      const generated = await generateDemoWafer({
+        pattern,
+        fail_count: pattern === 'RANDOM' ? 36 : 48,
+        product_id: 'DEMO_WAFER_PRODUCT',
+        lot_id: `DEMO-${pattern}`,
+        wafer_id: '01',
+      })
+      return createAnalysis({
+        dataset: generated.data,
+        sources: [],
+        validation_issues: [],
+      })
+    },
+    onSuccess: (response) => {
+      navigate({
+        to: '/analyses/$analysisId',
+        params: { analysisId: response.data.id },
+      })
+    },
+  })
+
+  const demoLotMutation = useMutation({
+    mutationFn: async (scenario: DemoLotScenario) => {
+      const generated = await generateDemoLot(scenario)
+      for (const dataset of generated.data.datasets) {
+        await createAnalysis({
+          dataset,
+          sources: [],
+          validation_issues: [],
+        })
+      }
+      return generated
+    },
+    onSuccess: (response) => {
+      const first = response.data.datasets[0]
+      navigate({
+        to: '/lots',
+        search: {
+          product_id: first?.metadata.product_id ?? undefined,
+          lot_id: first?.metadata.lot_id ?? undefined,
+        },
       })
     },
   })
@@ -154,8 +218,70 @@ export function UploadPage() {
     <div className="page-container">
       <PageHeader
         title="新建分析"
-        description="上传 PAT / CP 文件，完成格式探测、严格解析、跨文件校验与标准 WaferDataset 组装。"
+        description="上传 PAT / CP 文件，或使用脱敏 Simulator 一键生成可验收的典型 Wafer / Lot。"
       />
+
+      <Card
+        className="section-card"
+        title="一键演示数据"
+        extra={<Tag color="blue">Synthetic · 不含生产数据</Tag>}
+      >
+        <Space direction="vertical" size={12} className="demo-generator">
+          <Typography.Text>
+            单片场景用于验证空间 Pattern；演示 Lot 用于验证 Yield 趋势、IQR 异常、Wafer Matrix 与 Mini Map。
+          </Typography.Text>
+          <Space wrap>
+            {demoPatterns.map((pattern) => (
+              <Button
+                key={pattern}
+                icon={<FlaskConical size={16} />}
+                disabled={demoLotMutation.isPending}
+                loading={demoMutation.isPending && demoMutation.variables === pattern}
+                onClick={() => demoMutation.mutate(pattern)}
+              >
+                {pattern}
+              </Button>
+            ))}
+          </Space>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<Layers3 size={16} />}
+              loading={
+                demoLotMutation.isPending
+                && demoLotMutation.variables === 'EDGE_DRIFT'
+              }
+              disabled={demoMutation.isPending}
+              onClick={() => demoLotMutation.mutate('EDGE_DRIFT')}
+            >
+              生成 5 片 EDGE_DRIFT 演示 Lot
+            </Button>
+            <Button
+              icon={<Layers3 size={16} />}
+              loading={
+                demoLotMutation.isPending
+                && demoLotMutation.variables === 'MIXED_PATTERNS'
+              }
+              disabled={demoMutation.isPending}
+              onClick={() => demoLotMutation.mutate('MIXED_PATTERNS')}
+            >
+              生成 MIXED_PATTERNS 演示 Lot
+            </Button>
+          </Space>
+          {(demoMutation.isError || demoLotMutation.isError) && (
+            <Alert
+              type="error"
+              showIcon
+              message="演示数据生成失败"
+              description={
+                (demoMutation.error ?? demoLotMutation.error) instanceof Error
+                  ? (demoMutation.error ?? demoLotMutation.error as Error).message
+                  : '无法生成或保存演示数据。'
+              }
+            />
+          )}
+        </Space>
+      </Card>
 
       <div className="section-card">
         <Upload.Dragger {...uploadProps}>

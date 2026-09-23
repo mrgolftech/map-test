@@ -9,6 +9,7 @@ from app.analysis.engine import AnalysisEngine
 from app.core.errors import AppError
 from app.db.models import AnalysisRecord
 from app.repositories.analysis_repository import AnalysisRepository
+from app.schemas.analysis import AnalysisSummary
 from app.schemas.history import (
     AnalysisCreateRequest,
     AnalysisDetail,
@@ -21,7 +22,6 @@ from app.schemas.parsing import (
     ValidationSeverity,
 )
 from app.schemas.wafer import WaferDataset
-from app.schemas.analysis import AnalysisSummary
 from app.validation.canonical import validate_dataset
 
 _source_adapter = TypeAdapter(list[SourceDescriptor])

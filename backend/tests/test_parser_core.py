@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from app.core.config import get_settings
 from app.parsers.base import DetectionResult, RawSource
 from app.parsers.cp_parser import CpParser

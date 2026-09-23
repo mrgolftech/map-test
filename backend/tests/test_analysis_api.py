@@ -63,3 +63,21 @@ def test_analysis_api_rejects_inconsistent_canonical_dataset(client):
         issue["code"] == "CANONICAL_TESTED_MISMATCH"
         for issue in error["details"]["issues"]
     )
+
+
+def test_analysis_api_rejects_die_result_summary_mismatch(client):
+    dataset = generate_pattern_dataset("EDGE", fail_count=48)
+    payload = dataset.model_dump(mode="json", by_alias=True)
+    payload["dies"][0]["result"] = "FAIL"
+
+    response = client.post(
+        "/api/v1/analysis",
+        json={"dataset": payload},
+    )
+
+    assert response.status_code == 422
+    issues = response.json()["error"]["details"]["issues"]
+    assert any(
+        issue["code"] == "CANONICAL_RESULT_COUNT_MISMATCH"
+        for issue in issues
+    )

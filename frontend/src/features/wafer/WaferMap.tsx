@@ -22,6 +22,7 @@ type WaferMapProps = {
   filterMode: WaferFilterMode
   selectedBins: number[]
   showCoordinates: boolean
+  compact?: boolean
   onDieClick?: (die: DieRecord) => void
 }
 
@@ -64,6 +65,7 @@ export const WaferMap = forwardRef<WaferMapHandle, WaferMapProps>(
       filterMode,
       selectedBins,
       showCoordinates,
+      compact = false,
       onDieClick,
     },
     ref,
@@ -274,14 +276,14 @@ export const WaferMap = forwardRef<WaferMapHandle, WaferMapProps>(
 
     return (
       <div
-        className="wafer-map-frame"
+        className={compact ? 'wafer-map-frame wafer-map-frame-compact' : 'wafer-map-frame'}
         style={{
           aspectRatio: `${dataset.metadata.columns} / ${dataset.metadata.rows}`,
         }}
       >
         <div
           ref={containerRef}
-          className="wafer-map-canvas"
+          className={compact ? 'wafer-map-canvas wafer-map-canvas-compact' : 'wafer-map-canvas'}
           role="img"
           aria-label={`Wafer map ${dataset.metadata.lot_id ?? ''} ${dataset.metadata.wafer_id ?? ''}`}
         />

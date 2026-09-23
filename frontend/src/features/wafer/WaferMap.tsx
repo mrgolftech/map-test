@@ -251,7 +251,7 @@ export const WaferMap = forwardRef<WaferMapHandle, WaferMapProps>(
         ],
       }
 
-      chart.setOption(option, true)
+      chart.setOption(option, { notMerge: false, lazyUpdate: true })
 
       const clickHandler = (params: unknown) => {
         if (!onDieClick || typeof params !== 'object' || params === null) return

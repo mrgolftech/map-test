@@ -153,7 +153,7 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 
 ### Single Wafer UI
 
-- `/wafer` detail page；
+- 单 Wafer detail page（Phase 3 起正式入口改为 `/analyses/{id}`）；
 - ECharts custom-series Canvas Wafer Map；
 - stable Soft Bin colors；
 - PASS / FAIL；
@@ -169,7 +169,7 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 - PNG / CSV export；
 - desktop / notebook / mobile basic view。
 
-Phase 2 在 Phase 3 持久化前使用 sessionStorage 保存“当前 Wafer 工作区”，它不是历史存储方案。
+Phase 2 曾使用 sessionStorage 保存临时“当前 Wafer 工作区”；Phase 3 已删除该持久化路径，正式详情统一从服务端分析 ID 恢复。
 
 ### Phase 2 退出条件
 
@@ -195,14 +195,73 @@ Phase 2 在 Phase 3 持久化前使用 sessionStorage 保存“当前 Wafer 工�
 
 ## Phase 3 — Persistence / History
 
-- Analysis record；
-- SQLite persistence；
-- History API；
-- History page；
-- filtering；
-- restore；
-- deletion；
-- migration tests。
+### Backend persistence
+
+- SQLAlchemy `AnalysisRecord`；
+- Alembic `0002_analysis_history`；
+- indexed summary columns；
+- WaferDataset JSON snapshot；
+- AnalysisSummary JSON snapshot；
+- SourceDescriptor / ValidationIssue snapshot；
+- Repository / Service / API 分层；
+- server-side canonical re-validation；
+- server-side deterministic analysis recomputation；
+- main_fail_bin / main_pattern summary；
+- Docker startup migration。
+
+### History API
+
+- `POST /api/v1/analyses`；
+- `GET /api/v1/analyses`；
+- `GET /api/v1/analyses/{id}`；
+- `DELETE /api/v1/analyses/{id}`；
+- Product / Lot / Wafer / date / yield / main bin / pattern filters；
+- pagination；
+- stable not-found / invalid-data errors。
+
+### Frontend
+
+- Upload → persist → `/analyses/{id}`；
+- History filters stored in URL search；
+- history table only consumes summary data；
+- detail loads full WaferDataset / AnalysisSummary on demand；
+- restore existing Wafer Map / Spatial / Bin page；
+- delete with Ant Design confirmation；
+- return to History；
+- remove formal sessionStorage persistence path。
+
+### Tests
+
+- create / restore exact snapshots；
+- list does not return full dataset；
+- filter regression；
+- pagination；
+- delete / 404；
+- invalid validation issue rejected；
+- server-side analysis recomputation；
+- frontend history query serialization；
+- History empty state；
+- Alembic fresh DB upgrade；
+- Docker history endpoint smoke。
+
+### Phase 3 退出条件
+
+1. 新分析保存后刷新浏览器仍可从 History 恢复；
+2. History 列表不传输完整 Die 明细；
+3. Product / Lot / Wafer / date / yield / main bin / pattern 可筛选；
+4. 详情恢复使用持久化 WaferDataset + AnalysisSummary；
+5. 删除后 GET 返回稳定 `ANALYSIS_NOT_FOUND`；
+6. 客户端不能伪造 AnalysisSummary 进入历史真值；
+7. Docker 新库自动 migration 后 History API 可访问；
+8. frontend/backend/Docker CI 全绿。
+
+明确不进入 Phase 3：
+
+- Lot aggregate / compare；
+- AI report；
+- raw PAT / CP body persistence；
+- PostgreSQL；
+- SSO / RBAC。
 
 ## Phase 4 — Multi Wafer / Lot
 

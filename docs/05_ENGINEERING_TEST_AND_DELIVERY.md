@@ -192,7 +192,7 @@ Simulator config
 → compare expected canonical facts
 ```
 
-真实生产文件只可用于本地/受控环境的外部验证，不提交 Git。
+既有 PAT/CP 样例只用于确认格式结构；正式回归使用重新生成的 synthetic fixture，不提交原始样例文件。
 
 ## 8. CI
 

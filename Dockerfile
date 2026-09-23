@@ -8,7 +8,8 @@ RUN npm run build
 FROM python:3.12-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    STATIC_DIR=/app/static
+    STATIC_DIR=/app/static \
+    DATABASE_URL=sqlite:////app/data/map-test.db
 WORKDIR /app
 COPY backend/pyproject.toml ./backend/pyproject.toml
 COPY backend/app ./backend/app

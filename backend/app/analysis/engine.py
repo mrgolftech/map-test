@@ -4,6 +4,7 @@ from app.analysis.clustering import connected_components
 from app.analysis.geometry import DieGeometry, build_geometry
 from app.schemas.analysis import (
     AnalysisConfig,
+    AnalysisFinding,
     AnalysisSummary,
     BinRegionMetric,
     BinStat,
@@ -418,28 +419,46 @@ class AnalysisEngine:
         fail_bins.sort(key=lambda item: item.count, reverse=True)
 
         findings = [
-            (
-                f"Yield={dataset.summary.yield_:.4f}; "
-                f"tested={dataset.summary.tested_die}, "
-                f"pass={dataset.summary.pass_die}, fail={dataset.summary.fail_die}."
-            )
-            if dataset.summary.yield_ is not None
-            else (
-                f"Yield unavailable; tested={dataset.summary.tested_die}, "
-                f"pass={dataset.summary.pass_die}, fail={dataset.summary.fail_die}."
+            AnalysisFinding(
+                kind="FACT",
+                text=(
+                    (
+                        f"Yield={dataset.summary.yield_:.4f}; "
+                        f"tested={dataset.summary.tested_die}, "
+                        f"pass={dataset.summary.pass_die}, "
+                        f"fail={dataset.summary.fail_die}."
+                    )
+                    if dataset.summary.yield_ is not None
+                    else (
+                        f"Yield unavailable; tested={dataset.summary.tested_die}, "
+                        f"pass={dataset.summary.pass_die}, "
+                        f"fail={dataset.summary.fail_die}."
+                    )
+                ),
             )
         ]
         if fail_bins:
             main = fail_bins[0]
             findings.append(
-                f"Main fail bin is {main.soft_bin} ({main.description or 'N/A'}), "
-                f"count={main.count}, fail_share={(main.fail_share or 0.0):.4f}."
+                AnalysisFinding(
+                    kind="FACT",
+                    text=(
+                        f"Main fail bin is {main.soft_bin} "
+                        f"({main.description or 'N/A'}), count={main.count}, "
+                        f"fail_share={(main.fail_share or 0.0):.4f}."
+                    ),
+                )
             )
         if patterns:
             top = patterns[0]
             findings.append(
-                f"Top deterministic pattern is {top.pattern} for Bin {top.soft_bin} "
-                f"with score={top.score:.3f}."
+                AnalysisFinding(
+                    kind="JUDGMENT",
+                    text=(
+                        f"Top deterministic pattern is {top.pattern} "
+                        f"for Bin {top.soft_bin} with score={top.score:.3f}."
+                    ),
+                )
             )
 
         limitations = [

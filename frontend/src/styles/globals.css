@@ -155,3 +155,12 @@ textarea { font: inherit; }
     transition-duration: 0.01ms !important;
   }
 }
+
+
+.upload-actions {
+  margin-top: 12px;
+}
+
+.upload-summary {
+  margin-top: 16px;
+}

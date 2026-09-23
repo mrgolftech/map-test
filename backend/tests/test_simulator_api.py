@@ -63,3 +63,22 @@ def test_simulator_rejects_impossible_fail_count(client):
 
     assert response.status_code == 422
     assert response.json()["error"]["code"] == "SIMULATOR_INVALID_CONFIG"
+
+
+def test_generate_multi_pattern_wafer(client):
+    response = client.post(
+        "/api/v1/simulator/wafer",
+        json={
+            "pattern": "MULTI_PATTERN",
+            "fail_count": 64,
+            "seed": 456,
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["summary"]["fail_die"] == 64
+    counts = {item["bin"]: item["count"] for item in data["bins"]}
+    assert counts[18] == 32
+    assert counts[20] == 32
+    assert response.json()["meta"]["pattern"] == "MULTI_PATTERN"

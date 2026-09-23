@@ -4,8 +4,6 @@ import app.services.ai_analysis_service as ai_service_module
 from app.ai.provider import AIProvider
 from app.core.config import get_settings
 from app.simulator.patterns import generate_pattern_dataset
-
-
 REPORT = {
     "executive_summary": "该晶圆存在明确的边缘失效特征，需结合确定性统计继续验证。",
     "key_findings": [

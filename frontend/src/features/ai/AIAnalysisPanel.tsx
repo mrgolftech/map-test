@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
   Button,
@@ -16,6 +16,9 @@ import { analyzeWithAI, getLLMConfig } from './api'
 
 type AIAnalysisPanelProps = {
   analysisId: string
+  initialReport?: AIReport | null
+  initialModel?: string | null
+  initialGeneratedAt?: string | null
 }
 
 function findingColor(kind: string) {
@@ -155,20 +158,36 @@ function ReportView({
   )
 }
 
-export function AIAnalysisPanel({ analysisId }: AIAnalysisPanelProps) {
+export function AIAnalysisPanel({
+  analysisId,
+  initialReport = null,
+  initialModel = null,
+  initialGeneratedAt = null,
+}: AIAnalysisPanelProps) {
+  const queryClient = useQueryClient()
   const configQuery = useQuery({
     queryKey: ['llm-config'],
     queryFn: getLLMConfig,
   })
   const mutation = useMutation({
     mutationFn: () => analyzeWithAI(analysisId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['analysis', analysisId] })
+    },
   })
 
-  if (configQuery.isPending) {
+  const report = mutation.data?.data.report ?? initialReport
+  const model = mutation.data?.data.model
+    ?? initialModel
+    ?? configQuery.data?.data.model
+    ?? '—'
+  const configured = configQuery.data?.data.configured ?? false
+
+  if (configQuery.isPending && !report) {
     return <Typography.Text type="secondary">正在读取 AI 配置…</Typography.Text>
   }
 
-  if (configQuery.isError) {
+  if (configQuery.isError && !report) {
     return (
       <Alert
         type="error"
@@ -181,7 +200,7 @@ export function AIAnalysisPanel({ analysisId }: AIAnalysisPanelProps) {
     )
   }
 
-  if (!configQuery.data?.data.configured) {
+  if (!configured && !report && !configQuery.isPending) {
     return (
       <Alert
         type="info"
@@ -195,21 +214,39 @@ export function AIAnalysisPanel({ analysisId }: AIAnalysisPanelProps) {
   return (
     <Space direction="vertical" size={12} className="ai-report-stack">
       <Flex justify="space-between" align="center" wrap gap={8}>
-        <Space>
-          <Bot size={18} />
-          <Typography.Text>
-            模型：{configQuery.data.data.model ?? '—'}
-          </Typography.Text>
+        <Space direction="vertical" size={0}>
+          <Space>
+            <Bot size={18} />
+            <Typography.Text>
+              模型：{model}
+            </Typography.Text>
+          </Space>
+          {initialGeneratedAt && !mutation.data && (
+            <Typography.Text type="secondary">
+              已保存：{new Date(initialGeneratedAt).toLocaleString()}
+            </Typography.Text>
+          )}
         </Space>
-        <Button
-          type="primary"
-          icon={mutation.data ? <RefreshCw size={16} /> : <Bot size={16} />}
-          loading={mutation.isPending}
-          onClick={() => mutation.mutate()}
-        >
-          {mutation.data ? '重新 AI 分析' : '生成 AI 分析'}
-        </Button>
+        {configured && (
+          <Button
+            type="primary"
+            icon={report ? <RefreshCw size={16} /> : <Bot size={16} />}
+            loading={mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            {report ? '重新 AI 分析' : '生成 AI 分析'}
+          </Button>
+        )}
       </Flex>
+
+      {!configured && report && (
+        <Alert
+          type="info"
+          showIcon
+          message="当前 LLM 未配置"
+          description="正在显示历史中已保存的 AI 报告；重新生成需要先配置服务端 LLM。"
+        />
+      )}
 
       {mutation.isError && (
         <Alert
@@ -222,17 +259,17 @@ export function AIAnalysisPanel({ analysisId }: AIAnalysisPanelProps) {
         />
       )}
 
-      {!mutation.data && !mutation.isPending && !mutation.isError && (
+      {!report && !mutation.isPending && !mutation.isError && (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           description="点击“生成 AI 分析”，基于当前已保存的确定性统计生成解释与排查建议。"
         />
       )}
 
-      {mutation.data && (
+      {report && (
         <ReportView
-          report={mutation.data.data.report}
-          model={mutation.data.data.model}
+          report={report}
+          model={model}
         />
       )}
     </Space>

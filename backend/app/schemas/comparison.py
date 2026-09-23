@@ -44,7 +44,7 @@ class YieldAggregate(BaseModel):
 
 
 class YieldTrendPoint(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     analysis_id: str
     wafer_id: str | None
@@ -112,7 +112,7 @@ class WaferMapPreview(BaseModel):
 
 
 class WaferComparisonRow(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
     analysis_id: str
     product_id: str | None

@@ -13,7 +13,6 @@ from app.schemas.analysis import (
 )
 from app.schemas.wafer import DieRecord, DieResult, WaferDataset
 
-
 _REGION_NAMES = (
     "center",
     "mid",
@@ -360,29 +359,31 @@ class AnalysisEngine:
             row_counts = Counter(die.row for die in bin_dies)
             column_counts = Counter(die.column for die in bin_dies)
 
-            def metric(region: str) -> BinRegionMetric:
-                return _bin_region_metric(
+            metrics = {
+                region: _bin_region_metric(
                     region_tested=region_stats[region].tested_die,
                     region_bin_count=counts[region],
                     whole_tested=total_tested,
                     whole_bin_count=count,
                 )
+                for region in _REGION_NAMES
+            }
 
             spatial_by_bin.append(
                 SpatialBinStat(
                     soft_bin=bin_record.bin,
                     count=count,
-                    center=metric("center"),
-                    mid=metric("mid"),
-                    edge=metric("edge"),
-                    top=metric("top"),
-                    bottom=metric("bottom"),
-                    left=metric("left"),
-                    right=metric("right"),
-                    q1=metric("q1"),
-                    q2=metric("q2"),
-                    q3=metric("q3"),
-                    q4=metric("q4"),
+                    center=metrics["center"],
+                    mid=metrics["mid"],
+                    edge=metrics["edge"],
+                    top=metrics["top"],
+                    bottom=metrics["bottom"],
+                    left=metrics["left"],
+                    right=metrics["right"],
+                    q1=metrics["q1"],
+                    q2=metrics["q2"],
+                    q3=metrics["q3"],
+                    q4=metrics["q4"],
                     cluster=connected_components(
                         coordinates,
                         neighbor_mode=actual_config.neighbor_mode,
@@ -442,9 +443,15 @@ class AnalysisEngine:
             )
 
         limitations = [
-            "Geometry uses tested-die bounding box normalization rather than physical wafer dimensions.",
+            (
+                "Geometry uses tested-die bounding box normalization rather than "
+                "physical wafer dimensions."
+            ),
             "Pattern scores are deterministic algorithm confidence, not root-cause confidence.",
-            "Phase 2 LINE detection covers row/column concentration; arbitrary diagonal scratch fitting is deferred.",
+            (
+                "Phase 2 LINE detection covers row/column concentration; "
+                "arbitrary diagonal scratch fitting is deferred."
+            ),
         ]
 
         return AnalysisSummary(

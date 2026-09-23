@@ -243,7 +243,8 @@ class LotComparisonService:
             if item.dataset.summary.yield_ is not None
         ]
         yield_stats, lower, upper = self._yield_stats(
-            [float(value) for value in yield_values]
+            [float(value) for value in yield_values],
+            wafer_count=len(loaded),
         )
         if len(yield_values) < 4:
             limitations.append(
@@ -417,6 +418,8 @@ class LotComparisonService:
     @staticmethod
     def _yield_stats(
         values: list[float],
+        *,
+        wafer_count: int,
     ) -> tuple[YieldAggregate, float | None, float | None]:
         q1 = _quantile(values, 0.25)
         q3 = _quantile(values, 0.75)
@@ -428,7 +431,7 @@ class LotComparisonService:
             upper = q3 + 1.5 * iqr
 
         stats = YieldAggregate(
-            wafer_count=len(values),
+            wafer_count=wafer_count,
             valid_yield_count=len(values),
             average=mean(values) if values else None,
             median=median(values) if values else None,

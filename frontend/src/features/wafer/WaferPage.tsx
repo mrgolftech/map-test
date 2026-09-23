@@ -20,7 +20,7 @@ import {
   Tag,
   Typography,
 } from 'antd'
-import { Download, RotateCcw } from 'lucide-react'
+import { Download, FileText, RotateCcw } from 'lucide-react'
 import { PageHeader } from '../../components/common/PageHeader'
 import type {
   BinStat,
@@ -33,6 +33,7 @@ import type { DieRecord } from '../../types/wafer'
 import { binColor } from './binColors'
 import { MiniWaferMap } from './MiniWaferMap'
 import { downloadDataUrl, downloadText, waferCsv } from './export'
+import { waferReportHtml } from './report'
 import {
   WaferMap,
   type WaferFilterMode,
@@ -287,6 +288,15 @@ export function WaferPage({
     )
   }
 
+  const exportReport = () => {
+    const mapPng = mapRef.current?.exportPng()
+    downloadText(
+      `${filenameBase}-analysis-report.html`,
+      waferReportHtml(dataset, analysis, mapPng),
+      'text/html;charset=utf-8',
+    )
+  }
+
   const overview = (
     <Space direction="vertical" size={12} className="wafer-tab-stack">
       <Row gutter={[12, 12]}>
@@ -394,6 +404,9 @@ export function WaferPage({
           <Space wrap>
             <Button icon={<Download size={16} />} onClick={exportCsv}>
               导出 CSV
+            </Button>
+            <Button icon={<FileText size={16} />} onClick={exportReport}>
+              导出报告
             </Button>
             <Button type="primary" icon={<Download size={16} />} onClick={exportPng}>
               导出 PNG

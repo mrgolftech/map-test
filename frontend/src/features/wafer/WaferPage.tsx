@@ -51,14 +51,22 @@ function safeName(value: string | null | undefined) {
   return (value ?? 'wafer').replaceAll(/[^a-zA-Z0-9._-]+/g, '_')
 }
 
+type WaferExtraTab = {
+  key: string
+  label: ReactNode
+  children: ReactNode
+}
+
 type WaferPageProps = {
   workspace?: WaferWorkspace
   extraActions?: ReactNode
+  extraTabs?: WaferExtraTab[]
 }
 
 export function WaferPage({
   workspace,
   extraActions,
+  extraTabs,
 }: WaferPageProps = {}) {
   const navigate = useNavigate()
   const mapRef = useRef<WaferMapHandle | null>(null)
@@ -499,6 +507,7 @@ export function WaferPage({
             { key: 'overview', label: 'Overview', children: overview },
             { key: 'spatial', label: 'Spatial', children: spatial },
             { key: 'bin', label: 'Bin', children: bins },
+            ...(extraTabs ?? []),
           ]}
         />
       </div>

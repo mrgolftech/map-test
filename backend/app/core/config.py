@@ -17,6 +17,13 @@ class Settings(BaseSettings):
     upload_max_line_bytes: int = 8192
     upload_allowed_extensions: str = ".pat,.cp1,.cp,.map,.txt"
 
+    llm_base_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""
+    llm_timeout_seconds: float = 45.0
+    llm_max_retries: int = 2
+    llm_max_output_tokens: int = 2200
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -299,3 +299,32 @@ Wafer Map 与工程 UI 可参考 `wafertools/wafermap` / `wafertools/tsmap` 的�
 - 不为了保持一致而放弃本项目既定的 React + Ant Design 设计系统。
 
 参考项目只提供工程经验，不构成新的 UI 依赖。
+
+
+## 15. Phase 2 Wafer Map 实现约束
+
+当前 Wafer Map 使用 Apache ECharts custom series + Canvas renderer。
+
+必须保持：
+
+- renderer 只消费 WaferDataset，不依赖 PAT / CP；
+- xAxis=Column，yAxis=Row，y 轴按 Map 行方向 inverse；
+- 每颗 tested Die 独立 rectangle；
+- PASS 使用固定绿色，Fail Bin 颜色由 Soft Bin 稳定映射；
+- selectedBins 非空时非目标 Bin 灰化，而不是改变其 Bin 颜色映射；
+- PASS / FAIL 模式可以隐藏非目标结果；
+- tooltip / click detail 必须展示 Row、Column、Char、Bin、Description、Result；
+- 坐标轴可关闭，但源 Row/Column 不改变；
+- zoom / pan 不改变数据语义；
+- Notch 以独立 overlay 表达，不通过旋转数据伪造；
+- 主 Fail Bin Mini Map 复用同一 WaferMap renderer；
+- PNG export 从当前 renderer 导出；
+- CSV export 从 WaferDataset 导出，不从 ECharts data 反推。
+
+性能策略：
+
+- Canvas renderer；
+- animation=false；
+- progressive rendering；
+- 轴范围由 metadata.rows / columns 固定，不依赖当前过滤结果；
+- 禁止一个 Die 创建一个 React DOM 节点。

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Alert,
   Button,
@@ -17,10 +18,12 @@ import {
   type UploadFile,
   type UploadProps,
 } from 'antd'
-import { FileSearch, UploadCloud } from 'lucide-react'
+import { BarChart3, FileSearch, UploadCloud } from 'lucide-react'
 import { ApiError } from '../../api/client'
 import { PageHeader } from '../../components/common/PageHeader'
 import type { SourceDescriptor, ValidationIssue } from '../../types/wafer'
+import { analyzeWafer } from '../wafer/api'
+import { saveWaferWorkspace } from '../wafer/workspace'
 import { parseWaferFiles } from './api'
 
 const statusColor = {
@@ -35,10 +38,19 @@ function formatBytes(value: number) {
 }
 
 export function UploadPage() {
+  const navigate = useNavigate()
   const [fileList, setFileList] = useState<UploadFile[]>([])
 
   const mutation = useMutation({
     mutationFn: parseWaferFiles,
+  })
+
+  const analysisMutation = useMutation({
+    mutationFn: analyzeWafer,
+    onSuccess: (analysis, dataset) => {
+      saveWaferWorkspace({ dataset, analysis })
+      navigate({ to: '/wafer' })
+    },
   })
 
   const uploadProps: UploadProps = {
@@ -50,9 +62,11 @@ export function UploadPage() {
     onChange: ({ fileList: next }) => {
       setFileList(next.slice(-2))
       mutation.reset()
+      analysisMutation.reset()
     },
     onRemove: () => {
       mutation.reset()
+      analysisMutation.reset()
       return true
     },
   }
@@ -176,6 +190,16 @@ export function UploadPage() {
         />
       )}
 
+      {analysisMutation.error instanceof ApiError && (
+        <Alert
+          className="section-block"
+          type="error"
+          showIcon
+          message={analysisMutation.error.code}
+          description={analysisMutation.error.message}
+        />
+      )}
+
       {result && (
         <>
           <div className="section-card">
@@ -197,6 +221,20 @@ export function UploadPage() {
                 result.status === 'INVALID'
                   ? '检测到阻断性数据问题，当前结果不会进入正式分析。'
                   : '已完成源文件探测、解析、组装与 canonical validation。'
+              }
+              extra={
+                dataset && result.status !== 'INVALID'
+                  ? (
+                    <Button
+                      type="primary"
+                      icon={<BarChart3 size={17} />}
+                      loading={analysisMutation.isPending}
+                      onClick={() => analysisMutation.mutate(dataset)}
+                    >
+                      进入单片分析
+                    </Button>
+                  )
+                  : undefined
               }
             />
           </div>

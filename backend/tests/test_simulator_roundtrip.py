@@ -1,0 +1,42 @@
+from app.core.config import get_settings
+from app.parsers.base import RawSource
+from app.schemas.parsing import ParseStatus
+from app.services.file_parse_service import FileParseService
+from app.simulator.formats import serialize_cp1, serialize_pat
+from app.simulator.generator import default_demo_config, generate_synthetic_dataset
+
+
+def test_simulator_pat_cp_round_trip_preserves_canonical_facts():
+    config = default_demo_config()
+    expected = generate_synthetic_dataset(config)
+    pat = serialize_pat(expected, filename="ROUNDTRIP.PAT", product_hint=config.product_hint)
+    cp = serialize_cp1(expected)
+
+    result = FileParseService(get_settings()).parse_sources(
+        [
+            RawSource("ROUNDTRIP.PAT", pat.encode()),
+            RawSource("ROUNDTRIP.CP1", cp.encode()),
+        ]
+    )
+
+    assert result.status == ParseStatus.VALID
+    assert result.dataset is not None
+
+    actual = result.dataset
+    assert actual.metadata.product_id == expected.metadata.product_id
+    assert actual.metadata.lot_id == expected.metadata.lot_id
+    assert actual.metadata.wafer_id == expected.metadata.wafer_id
+    assert actual.metadata.rows == expected.metadata.rows
+    assert actual.metadata.columns == expected.metadata.columns
+    assert actual.metadata.notch == expected.metadata.notch
+    assert actual.summary == expected.summary
+    assert {item.bin: item.count for item in actual.bins} == {
+        item.bin: item.count for item in expected.bins
+    }
+    assert [
+        (die.row, die.column, die.source_char, die.soft_bin, die.result)
+        for die in actual.dies
+    ] == [
+        (die.row, die.column, die.source_char, die.soft_bin, die.result)
+        for die in expected.dies
+    ]

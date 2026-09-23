@@ -109,12 +109,16 @@ def generate_pattern_dataset(
     *,
     seed: int = 20260924,
     fail_count: int = 48,
+    rows: int = 24,
+    columns: int = 32,
 ) -> WaferDataset:
     config = SyntheticWaferConfig(
         product_id=f"DEMO_{pattern}",
         lot_id="PATTERN001",
         wafer_id="01",
         seed=seed,
+        rows=rows,
+        columns=columns,
         bins=[],
     )
     coordinates = active_coordinates(config)

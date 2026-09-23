@@ -68,9 +68,20 @@ const historyRoute = createRoute({
   }),
   component: HistoryPage,
 })
+export type LotSearch = {
+  product_id?: string
+  lot_id?: string
+  analysis_ids?: string
+}
+
 const lotRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/lots',
+  validateSearch: (search: Record<string, unknown>): LotSearch => ({
+    product_id: stringValue(search.product_id),
+    lot_id: stringValue(search.lot_id),
+    analysis_ids: stringValue(search.analysis_ids),
+  }),
   component: LotPage,
 })
 const settingsRoute = createRoute({

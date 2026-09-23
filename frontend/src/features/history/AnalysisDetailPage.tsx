@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import { Alert, Button, Empty, Popconfirm, Skeleton, Space } from 'antd'
 import { History, Trash2 } from 'lucide-react'
-import { deleteAnalysis, getAnalysis } from './api'
+import { AIAnalysisPanel } from '../ai/AIAnalysisPanel'
 import { WaferPage } from '../wafer/WaferPage'
+import { deleteAnalysis, getAnalysis } from './api'
 
 type AnalysisDetailPageProps = {
   analysisId: string
@@ -70,6 +71,13 @@ export function AnalysisDetailPage({
         dataset: query.data.data.dataset,
         analysis: query.data.data.analysis,
       }}
+      extraTabs={[
+        {
+          key: 'ai',
+          label: 'AI 分析',
+          children: <AIAnalysisPanel analysisId={analysisId} />,
+        },
+      ]}
       extraActions={(
         <Space wrap>
           <Button

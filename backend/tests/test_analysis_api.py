@@ -68,7 +68,12 @@ def test_analysis_api_rejects_inconsistent_canonical_dataset(client):
 def test_analysis_api_rejects_die_result_summary_mismatch(client):
     dataset = generate_pattern_dataset("EDGE", fail_count=48)
     payload = dataset.model_dump(mode="json", by_alias=True)
-    payload["dies"][0]["result"] = "FAIL"
+    pass_index = next(
+        index
+        for index, die in enumerate(dataset.dies)
+        if die.result.value == "PASS"
+    )
+    payload["dies"][pass_index]["result"] = "FAIL"
 
     response = client.post(
         "/api/v1/analysis",

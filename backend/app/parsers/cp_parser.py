@@ -203,7 +203,7 @@ class CpParser(BaseParser):
             section_positions["[SOFT BIN MAP]"]
         ]
         bins: list[SourceBinDefinition] = []
-        for line_number, line in enumerate(bin_text.splitlines(), start=1):
+        for line in bin_text.splitlines():
             match = _BIN_RE.match(line)
             if not match:
                 continue

@@ -349,41 +349,67 @@ ParseResult
 
 ## 10. 持久化
 
-MVP 使用 SQLite。
+MVP 使用 SQLite + SQLAlchemy 2 + Alembic。
 
-推荐主要表：
+Phase 3 采用**单 analysis 表 + 结构化索引字段 + JSON 快照**，避免在需求尚未稳定时过早拆分大量关系表。
+
+当前 `analysis` 表：
 
 ```text
 analysis
-analysis_file
-wafer_summary
-ai_report
-app_setting
+├─ id (UUID)
+├─ created_at
+├─ product_id
+├─ lot_id
+├─ wafer_id
+├─ flow_id
+├─ yield
+├─ tested_die
+├─ pass_die
+├─ fail_die
+├─ main_fail_bin
+├─ main_pattern
+├─ validation_status
+├─ dataset_json
+├─ analysis_summary_json
+├─ sources_json
+└─ validation_json
 ```
 
-WaferDataset 与 AnalysisSummary 可先以 JSON 列持久化，同时对高频查询字段做结构化列：
+原则：
 
-- product_id；
-- lot_id；
-- wafer_id；
-- flow_id；
-- yield；
-- tested_die；
-- pass_die；
-- fail_die；
-- main_fail_bin；
-- created_at。
+- 列表/筛选只读取结构化摘要字段；
+- 打开详情时才读取完整 WaferDataset / AnalysisSummary JSON；
+- AnalysisSummary 本身带 schema_version，用于解释历史快照；
+- `POST /analyses` 不接受客户端 AnalysisSummary 作为权威真值，服务端重新 canonical validate 并调用 AnalysisEngine；
+- invalid 数据不得持久化为正式分析；
+- Product / Lot / Wafer / Yield / Main Bin / Pattern / Created At 建索引；
+- ORM Model 不直接暴露为 API DTO。
+
+未来需要 AI report、设置、多版本源文件或更复杂查询时，再新增 `ai_report` / `app_setting` / `analysis_file` 等表。不要为尚未实现的能力预建空表。
 
 未来迁移 PostgreSQL 时不改变领域模型和 API 语义。
 
 ## 11. 原始文件存储策略
 
-默认开发策略：
+Phase 3 **默认不持久化用户上传的 PAT / CP 原始正文**。
 
-- fixture 放 `tests/fixtures/`；
-- 用户上传原始文件存受控数据目录；
-- DB 仅保存相对资源标识，不保存任意绝对路径；
-- 删除分析时明确处理源文件保留策略。
+当前保存：
+
+- Canonical WaferDataset；
+- AnalysisSummary；
+- SourceDescriptor（filename / size / sha256 / detected format / parser evidence）；
+- ValidationIssue。
+
+理由：
+
+- History 恢复不依赖再次解析原始文件；
+- 减少敏感生产数据落盘；
+- 避免引入文件生命周期、孤儿文件和路径安全问题。
+
+fixture 放 `tests/fixtures/`，且必须是 synthetic / 脱敏数据。
+
+如果以后明确要求“下载原始文件 / 重新解析历史文件”，再引入受控数据目录和 `analysis_file`，DB 只保存相对资源标识，不保存任意客户端绝对路径。
 
 生产文件默认不上传 GitHub、不写日志。
 
@@ -463,3 +489,60 @@ AI 失败只影响 AI Panel，不影响已完成的 Parser / Analysis / History�
 配置读取集中在 backend core/config，不允许模块散落 `os.getenv()`。
 
 前端只暴露必要非敏感构建配置。
+
+
+## 17. Phase 3 History API
+
+当前持久化 API：
+
+```text
+POST   /api/v1/analyses
+GET    /api/v1/analyses
+GET    /api/v1/analyses/{id}
+DELETE /api/v1/analyses/{id}
+```
+
+`POST /analyses` 输入：
+
+- WaferDataset；
+- SourceDescriptor[]；
+- ValidationIssue[]。
+
+服务端流程：
+
+```text
+WaferDataset
+→ canonical validation
+→ deterministic AnalysisEngine
+→ derive main_fail_bin / main_pattern
+→ persist indexed summary + versioned JSON snapshots
+```
+
+History List 支持：
+
+- Product；
+- Lot；
+- Wafer；
+- date range；
+- yield min/max；
+- main fail bin；
+- pattern；
+- pagination。
+
+History filters 放 URL search，刷新和复制 URL 后可恢复。
+
+## 18. 数据库启动策略
+
+单容器部署时，容器启动命令先执行：
+
+```text
+alembic upgrade head
+→ uvicorn
+```
+
+CI Docker smoke 必须同时验证：
+
+- `/api/v1/health`；
+- `/api/v1/analyses`。
+
+这样可以发现“应用进程正常但 schema 未迁移”的部署错误。

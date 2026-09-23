@@ -280,7 +280,12 @@ export function WaferPage() {
           <Card title="确定性结论" size="small">
             <Space direction="vertical" size={8}>
               {analysis.top_findings.map((item) => (
-                <Typography.Text key={item}>【事实/判断】{item}</Typography.Text>
+                <Flex key={`${item.kind}-${item.text}`} gap={8} align="flex-start">
+                  <Tag color={item.kind === 'FACT' ? 'blue' : 'purple'}>
+                    {item.kind === 'FACT' ? '事实' : '判断'}
+                  </Tag>
+                  <Typography.Text>{item.text}</Typography.Text>
+                </Flex>
               ))}
             </Space>
           </Card>

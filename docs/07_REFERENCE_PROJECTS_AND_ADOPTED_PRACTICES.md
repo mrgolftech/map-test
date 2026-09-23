@@ -223,3 +223,29 @@ ERROR 存在时默认 status=INVALID；不得把不可信 dataset 当作正式�
 - test-value statistical analysis。
 
 这些能力继续按现有 Roadmap 进入后续阶段。
+
+
+## 5. PAT / CP 样例格式与 synthetic 数据原则
+
+已知 PAT / CP 文件仅作为**格式样例**使用，用于确认：
+
+- PAT 的头部字段组织、Notch 表达和定长字符 Map；
+- CP 的 `[BOF]`、`[SOFT BIN]`、`[SOFT BIN MAP]`、`[EXTENSION]`、`[EOF]` 段结构；
+- Soft Bin 单字符编码方式；
+- PAT 使用 `.` 表示外部空白、CP Map 使用空格表示外部空白；
+- CP Map 行号与固定列宽的排版方式。
+
+仓库测试不得复制原始 Wafer 的 Product/Lot/Wafer、完整 Map 或具体统计结果。
+
+正确做法：
+
+```text
+已知样例格式
+→ 自定义 synthetic wafer facts
+→ Simulator
+→ synthetic PAT / CP
+→ Parser / Assembler
+→ 与预设 facts 比较
+```
+
+Synthetic fixture 应明确标识 `DEMO` / `SYNTHETIC`，并使用固定 seed。Phase 2 起再增加 Edge / Center / Ring / Cluster / Scratch 等带预期空间结论的场景。

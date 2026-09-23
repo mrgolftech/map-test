@@ -265,6 +265,19 @@ PatternResult
 
 score 是算法置信度，不等于根因置信度。
 
+Phase 2 Pattern v1 的实现范围：
+
+- EDGE：Edge enrichment 达阈值；
+- CENTER：Center enrichment 达阈值；
+- RING：Mid enrichment 高，同时 Center / Edge enrichment 不高；
+- TOP / BOTTOM / LEFT / RIGHT：目标半区 enrichment 高且对侧不高；
+- QUADRANT：象限 enrichment 高并满足最小样本量；
+- LOCALIZED_CLUSTER：8-neighbor connected component + cluster ratio；
+- LINE：行/列集中度；
+- RANDOM：未满足上述确定性阈值的 fallback。
+
+默认阈值必须随 AnalysisSummary 一起返回，不得只存在代码中。
+
 ## 10. Line / Scratch
 
 MVP 可以用轻量启发式：
@@ -276,6 +289,8 @@ MVP 可以用轻量启发式：
 
 只有满足阈值才标记 Line，不能凭图片肉眼判断。
 
+Phase 2 仅实现行/列方向 Line detection。任意角度直线拟合、PCA principal direction 与更完整 scratch detection 暂缓，AnalysisSummary limitations 必须明确这一点。
+
 ## 11. AnalysisSummary
 
 LLM、Lot 比较、报告统一消费 AnalysisSummary。
@@ -284,15 +299,26 @@ LLM、Lot 比较、报告统一消费 AnalysisSummary。
 
 ```text
 AnalysisSummary
-├─ schema_version
+├─ schema_version = "1.0"
 ├─ metadata
 ├─ summary
 ├─ validation
+├─ config
+│  ├─ center_radius
+│  ├─ edge_radius
+│  ├─ neighbor_mode
+│  ├─ enrichment_threshold
+│  ├─ cluster_ratio_threshold
+│  ├─ min_cluster_size
+│  ├─ directional_enrichment_threshold
+│  └─ line_concentration_threshold
 ├─ bin_stats[]
 ├─ region_stats
 ├─ spatial_by_bin[]
 ├─ patterns[]
 ├─ top_findings[]
+│  ├─ kind: FACT | JUDGMENT
+│  └─ text
 └─ limitations[]
 ```
 
@@ -368,3 +394,31 @@ Simulator 不能直接写测试期望结果。
 - 允许重试。
 
 模型给出的 possible_causes 必须呈现为假设。
+
+
+## 17. Analysis API 数据可信边界
+
+`POST /api/v1/analysis` 接收 WaferDataset 时，必须再次执行 canonical validation。
+
+原因：即使 Pydantic 类型合法，客户端仍可能提交逻辑不一致的数据，例如：
+
+- tested_die 与 dies[] 数量不一致；
+- tested != pass + fail；
+- Bin Count 与 Die 不一致；
+- 重复坐标；
+- 坐标越界。
+
+存在 canonical ERROR 时返回 `ANALYSIS_DATASET_INVALID`，不得进入空间统计。
+
+## 18. Phase 2 当前坐标算法
+
+当前几何使用 tested-die bounding box：
+
+1. 取 tested die 的 min/max row/column；
+2. 中点作为归一化中心；
+3. x/y 分别按半宽、半高归一化；
+4. radius 使用 x/y 欧氏距离，并按当前 tested die 最大 radius 再归一化至 0–1；
+5. Top 定义为源 row 较小方向，Right 定义为源 column 较大方向；
+6. Notch 只用于方向展示，不旋转源坐标。
+
+该方法适用于当前 Map 分析，但不是物理 mm 坐标。将来若文件提供 Die pitch / wafer diameter / origin，可新增 physical geometry adapter，不能静默改变已有 AnalysisSummary 语义。

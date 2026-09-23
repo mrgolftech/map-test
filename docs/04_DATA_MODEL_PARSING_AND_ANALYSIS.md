@@ -1,0 +1,320 @@
+# 04 — 数据模型、解析与分析规范
+
+## 1. Canonical WaferDataset
+
+所有外部格式最终转换为统一模型。
+
+概念结构：
+
+```text
+WaferDataset
+├─ metadata
+│  ├─ product_id
+│  ├─ lot_id
+│  ├─ wafer_id
+│  ├─ flow_id
+│  ├─ subcon
+│  ├─ tester
+│  ├─ test_program
+│  ├─ probe_card
+│  ├─ start_time
+│  ├─ stop_time
+│  ├─ notch
+│  ├─ rows
+│  └─ columns
+├─ dies[]
+│  ├─ row
+│  ├─ column
+│  ├─ source_char
+│  ├─ soft_bin
+│  ├─ hard_bin?
+│  ├─ result
+│  ├─ description
+│  └─ test_values?
+├─ bins[]
+│  ├─ bin
+│  ├─ char
+│  ├─ description
+│  ├─ count
+│  └─ percentage
+└─ summary
+   ├─ tested_die
+   ├─ pass_die
+   ├─ fail_die
+   └─ yield
+```
+
+约束：
+
+- Row / Column 使用源文件真实坐标语义；
+- API 是否展示 0-based / 1-based 必须显式定义，内部推荐统一 0-based；
+- source_char 必须保留；
+- result 枚举固定 PASS / FAIL / UNKNOWN；
+- 未测试 / 晶圆外区域不能伪造为 FAIL；
+- 不存在的数据用 null，不编造默认值。
+
+## 2. Parser 输出
+
+Parser 不直接输出前端视图模型，输出：
+
+- WaferDataset；
+- source file metadata；
+- validation issues。
+
+ValidationIssue：
+
+```text
+severity: INFO | WARNING | ERROR
+code
+message
+source_file
+line?
+row?
+column?
+details?
+```
+
+ERROR 表示结果不可信，默认不得进入正式分析；WARNING 可以继续但 UI 必须可见。
+
+## 3. 必要一致性校验
+
+至少验证：
+
+1. Map 实际行数 vs rows；
+2. 每行长度 vs columns；
+3. 已知字符映射；
+4. Map 字符统计 vs Bin Count；
+5. tested = pass + fail；
+6. pass / fail 不重复；
+7. PAT / CP 关联时 Product / Lot / Wafer 等关键字段；
+8. Notch 合法性；
+9. 坐标唯一；
+10. 空文件 / 无 Die。
+
+禁止为了“跑通”自动删除、填补或篡改异常 Die。
+
+## 4. 基础统计
+
+定义：
+
+```text
+yield = pass_die / tested_die
+fail_rate = fail_die / tested_die
+bin_rate = bin_count / tested_die
+bin_fail_share = bin_count / fail_die
+```
+
+边界：
+
+- tested_die = 0 时禁止除零，yield 为 null；
+- 百分比统一由原始数值计算，显示层负责格式化；
+- 后端不保存字符串 “36.10%” 作为唯一真值。
+
+## 5. 几何归一化
+
+空间分析需要定义晶圆有效 Die 的几何中心和归一化半径。
+
+推荐：
+
+- 使用有效 Die 坐标 bounding box / centroid 建立归一化坐标；
+- notch 方向不改变源坐标，只影响方向语义；
+- 半径 `r` 以统一归一化方式计算。
+
+默认区域：
+
+```text
+center: r < 0.45
+mid:    0.45 <= r < 0.75
+edge:   r >= 0.75
+```
+
+这些参数必须配置化并写入 AnalysisSummary，避免未来改变阈值后无法解释历史结果。
+
+## 6. Enrichment
+
+不要使用“该 Bin 有多少比例落在 Edge”代替 Edge 异常判断。
+
+定义：
+
+```text
+whole_bin_rate =
+  bin_count / whole_tested_die
+
+edge_bin_rate =
+  edge_bin_count / edge_tested_die
+
+edge_enrichment =
+  edge_bin_rate / whole_bin_rate
+```
+
+Center 同理。
+
+必须同时输出：
+
+- 区域 Die 总数；
+- 区域 Bin 数；
+- region rate；
+- whole rate；
+- enrichment。
+
+当分母太小或 0 时返回 null + limitation，不强行产生极大值。
+
+## 7. 上下左右与象限
+
+统一按归一化中心划分：
+
+- Top / Bottom；
+- Left / Right；
+- Q1 / Q2 / Q3 / Q4。
+
+方向必须结合 notch 元数据展示，不能在算法层偷偷旋转原始坐标。
+
+## 8. 聚集分析
+
+MVP 优先实现可解释算法：
+
+- 4-neighbor 或 8-neighbor connected component；
+- largest component；
+- number of components；
+- cluster ratio；
+- average component size。
+
+可选后续：
+
+- DBSCAN；
+- Moran's I。
+
+Pattern 判断必须使用确定阈值和统计证据。
+
+## 9. Pattern 结果
+
+统一结构：
+
+```text
+PatternResult
+├─ pattern
+├─ score
+├─ evidence[]
+├─ thresholds
+└─ limitations[]
+```
+
+例如：
+
+```json
+{
+  "pattern": "EDGE",
+  "score": 0.88,
+  "evidence": [
+    "edge_enrichment=2.31",
+    "edge_bin_rate=0.097",
+    "whole_bin_rate=0.042"
+  ]
+}
+```
+
+score 是算法置信度，不等于根因置信度。
+
+## 10. Line / Scratch
+
+MVP 可以用轻量启发式：
+
+- Fail 点线性拟合残差；
+- 行 / 列集中；
+- connected component 长宽比；
+- principal direction。
+
+只有满足阈值才标记 Line，不能凭图片肉眼判断。
+
+## 11. AnalysisSummary
+
+LLM、Lot 比较、报告统一消费 AnalysisSummary。
+
+建议：
+
+```text
+AnalysisSummary
+├─ schema_version
+├─ metadata
+├─ summary
+├─ validation
+├─ bin_stats[]
+├─ region_stats
+├─ spatial_by_bin[]
+├─ patterns[]
+├─ top_findings[]
+└─ limitations[]
+```
+
+必须版本化 `schema_version`。
+
+## 12. 多 Wafer 可比性
+
+比较前进行 compatibility check。
+
+优先要求：
+
+- product_id 相同；
+- flow_id 相同；
+- map geometry 可兼容；
+- Bin 定义可解释。
+
+Test Program / Tester / Probe Card 不同可以比较，但必须作为条件变量显示，不得隐藏。
+
+不可比数据可以展示，但综合统计必须给出 limitation。
+
+## 13. Lot 统计
+
+至少计算：
+
+- wafer_count；
+- avg_yield；
+- median_yield；
+- std_yield；
+- min / max；
+- per-bin mean / std；
+- per-bin trend；
+- enrichment trend；
+- outlier flags。
+
+MVP 离群值算法使用透明方法，例如 IQR / z-score，并记录规则。
+
+## 14. 模拟数据
+
+Simulator 不能直接写测试期望结果。
+
+正确模式：
+
+```text
+配置 pattern
+→ 生成 die/bin 数据
+→ 走真实 AnalysisEngine
+→ 测试算法是否识别预期模式
+```
+
+固定 fixture 必须有 seed 与 expected facts。
+
+## 15. LLM 输入边界
+
+禁止默认发送：
+
+- 整个原始 PAT / CP 文本；
+- 数万条完整 Die；
+- API Key；
+- 本地路径；
+- 与诊断无关的敏感元数据。
+
+优先发送压缩后的 AnalysisSummary。
+
+## 16. LLM 输出校验
+
+模型返回必须经过 Pydantic schema 校验。
+
+解析失败：
+
+- 保存原始 provider error metadata；
+- 不覆盖上一次成功报告；
+- UI 显示 AI Failed；
+- 允许重试。
+
+模型给出的 possible_causes 必须呈现为假设。

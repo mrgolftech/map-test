@@ -2,7 +2,12 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from hashlib import sha256
 
-from app.schemas.parsing import SourceFormat, SourceParseResult, SourceRole
+from app.schemas.parsing import (
+    SourceDescriptor,
+    SourceFormat,
+    SourceParseResult,
+    SourceRole,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,3 +49,15 @@ class BaseParser(ABC):
 
 def decode_text(source: RawSource) -> str:
     return source.content.decode("utf-8-sig")
+
+
+def build_descriptor(source: RawSource, detection: DetectionResult) -> SourceDescriptor:
+    return SourceDescriptor(
+        filename=source.filename,
+        size=source.size,
+        sha256=source.sha256,
+        detected_format=detection.detected_format,
+        parser_id=detection.parser_id,
+        role=detection.role,
+        detection_evidence=list(detection.evidence),
+    )

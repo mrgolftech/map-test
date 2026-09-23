@@ -35,7 +35,7 @@ export function AppThemeProvider({ children }: PropsWithChildren) {
   const antdTheme = useMemo<ThemeConfig>(
     () => ({
       algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      cssVar: true,
+      cssVar: {},
       token: {
         colorPrimary: mode === 'dark' ? '#4096ff' : '#1677ff',
         borderRadius: 8,

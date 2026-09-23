@@ -22,8 +22,7 @@ import { BarChart3, FileSearch, UploadCloud } from 'lucide-react'
 import { ApiError } from '../../api/client'
 import { PageHeader } from '../../components/common/PageHeader'
 import type { SourceDescriptor, ValidationIssue } from '../../types/wafer'
-import { analyzeWafer } from '../wafer/api'
-import { saveWaferWorkspace } from '../wafer/workspace'
+import { createAnalysis } from '../history/api'
 import { parseWaferFiles } from './api'
 
 const statusColor = {
@@ -46,10 +45,12 @@ export function UploadPage() {
   })
 
   const analysisMutation = useMutation({
-    mutationFn: analyzeWafer,
-    onSuccess: (analysis, dataset) => {
-      saveWaferWorkspace({ dataset, analysis })
-      navigate({ to: '/wafer' })
+    mutationFn: createAnalysis,
+    onSuccess: (response) => {
+      navigate({
+        to: '/analyses/$analysisId',
+        params: { analysisId: response.data.id },
+      })
     },
   })
 
@@ -229,9 +230,15 @@ export function UploadPage() {
                       type="primary"
                       icon={<BarChart3 size={17} />}
                       loading={analysisMutation.isPending}
-                      onClick={() => analysisMutation.mutate(dataset)}
+                      onClick={() =>
+                        analysisMutation.mutate({
+                          dataset,
+                          sources: result.sources,
+                          validation_issues: result.validation_issues,
+                        })
+                      }
                     >
-                      进入单片分析
+                      保存并进入分析
                     </Button>
                   )
                   : undefined

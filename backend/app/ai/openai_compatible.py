@@ -2,7 +2,6 @@ import time
 from collections.abc import Callable
 
 import httpx
-
 from app.ai.provider import AIProvider
 from app.core.errors import AppError
 

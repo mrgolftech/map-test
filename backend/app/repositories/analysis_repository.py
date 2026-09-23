@@ -16,6 +16,12 @@ class AnalysisRepository:
         self._session.refresh(record)
         return record
 
+    def save(self, record: AnalysisRecord) -> AnalysisRecord:
+        self._session.add(record)
+        self._session.commit()
+        self._session.refresh(record)
+        return record
+
     def get(self, analysis_id: str) -> AnalysisRecord | None:
         return self._session.get(AnalysisRecord, analysis_id)
 

@@ -1,5 +1,4 @@
 import pytest
-
 from app.analysis.engine import AnalysisEngine
 from app.simulator.generator import default_demo_config, generate_synthetic_dataset
 from app.simulator.patterns import generate_pattern_dataset

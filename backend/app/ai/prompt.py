@@ -20,7 +20,8 @@ Strict rules:
 11. Keep the JSON compact: at most four key findings, four spatial patterns,
     four possible causes, and four recommended checks. Avoid long repeated evidence.
 12. If lot comparison facts are supplied, explain the yield trend and outlier
-    with the wafer-level pattern evidence. Do not claim a confirmed cause.
+    with the wafer-level pattern evidence. Compare the main Fail Bin cluster
+    ratio across wafers explicitly when supplied. Do not claim a confirmed cause.
 
 Return exactly this shape:
 {

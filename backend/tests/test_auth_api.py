@@ -3,7 +3,7 @@ from fastapi.testclient import TestClient
 
 
 def test_protected_api_requires_login(raw_client: TestClient):
-    response = raw_client.get("/api/v1/dashboard")
+    response = raw_client.get("/api/v1/dashboard/summary")
     assert response.status_code == 401
     assert response.json()["error"]["code"] == "AUTH_REQUIRED"
 
@@ -34,12 +34,12 @@ def test_admin_login_session_and_logout(raw_client: TestClient):
     assert login.status_code == 200
     assert login.json()["data"]["authenticated"] is True
     assert login.json()["data"]["username"] == "admin"
-    assert raw_client.get("/api/v1/dashboard").status_code == 200
+    assert raw_client.get("/api/v1/dashboard/summary").status_code == 200
 
     logout = raw_client.post("/api/v1/auth/logout")
     assert logout.status_code == 200
     assert logout.json()["data"]["authenticated"] is False
-    assert raw_client.get("/api/v1/dashboard").status_code == 401
+    assert raw_client.get("/api/v1/dashboard/summary").status_code == 401
 
 
 def test_unconfigured_admin_login_returns_503(raw_client: TestClient, monkeypatch):

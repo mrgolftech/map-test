@@ -78,12 +78,27 @@ export function UploadPage() {
 
   const demoMutation = useMutation({
     mutationFn: async (pattern: SyntheticPattern) => {
+      const isScaleProfile =
+        pattern === 'LONG_TAIL_MULTI_BIN' || pattern === 'PRODUCTION_PROFILE_SCALE'
       const generated = await generateDemoWafer({
         pattern,
-        fail_count: pattern === 'LONG_TAIL_MULTI_BIN' ? 5560 : pattern === 'MIXED_FAILURES' ? 300 : pattern === 'RANDOM' ? 36 : 48,
-        rows: pattern === 'LONG_TAIL_MULTI_BIN' ? 88 : 24,
-        columns: pattern === 'LONG_TAIL_MULTI_BIN' ? 128 : 32,
-        product_id: 'DEMO_WAFER_PRODUCT',
+        fail_count:
+          pattern === 'PRODUCTION_PROFILE_SCALE'
+            ? 5560
+            : pattern === 'PRODUCTION_PROFILE_COMPACT'
+              ? 322
+              : pattern === 'LONG_TAIL_MULTI_BIN'
+                ? 5560
+                : pattern === 'MIXED_FAILURES'
+                  ? 300
+                  : pattern === 'RANDOM'
+                    ? 36
+                    : 48,
+        rows: isScaleProfile ? 88 : 24,
+        columns: isScaleProfile ? 128 : 32,
+        product_id: pattern.startsWith('PRODUCTION_PROFILE_')
+          ? 'DEMO_RF_PROFILE'
+          : 'DEMO_WAFER_PRODUCT',
         lot_id: `DEMO-${pattern}`,
         wafer_id: '01',
       })
@@ -240,7 +255,49 @@ export function UploadPage() {
       >
         <Space direction="vertical" size={12} className="demo-generator">
           <Typography.Text>
-            一张晶圆可同时有多种 Fail Bin，每个 Bin 可能呈现不同空间分布。下面的多失效场景展示这种情况；其余单片场景用于验证指定 Pattern，演示 Lot 用于验证跨片趋势。
+            一张晶圆可同时有多种 Fail Bin，每个 Bin 可能呈现不同空间分布。生产参考场景只保留真实样例的聚合特征，所有坐标、数量、标识和时间均重新生成。
+          </Typography.Text>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<FlaskConical size={16} />}
+              disabled={demoLotMutation.isPending}
+              loading={
+                demoMutation.isPending
+                && demoMutation.variables === 'PRODUCTION_PROFILE_COMPACT'
+              }
+              onClick={() => demoMutation.mutate('PRODUCTION_PROFILE_COMPACT')}
+            >
+              典型多失效晶圆（生产参考）
+            </Button>
+            <Button
+              icon={<FlaskConical size={16} />}
+              disabled={demoLotMutation.isPending}
+              loading={
+                demoMutation.isPending
+                && demoMutation.variables === 'PRODUCTION_PROFILE_SCALE'
+              }
+              onClick={() => demoMutation.mutate('PRODUCTION_PROFILE_SCALE')}
+            >
+              生产规模多 Bin 晶圆
+            </Button>
+            <Button
+              icon={<Layers3 size={16} />}
+              disabled={demoMutation.isPending}
+              loading={
+                demoLotMutation.isPending
+                && demoLotMutation.variables === 'PROFILE_DRIFT'
+              }
+              onClick={() => demoLotMutation.mutate('PROFILE_DRIFT')}
+            >
+              批次良率异常追踪
+            </Button>
+          </Space>
+          <Typography.Text type="secondary">
+            基于生产样例观察到的大尺寸、头部长尾、多 Bin 共存与主 Bin 聚集特征构造；不复用生产坐标、精确 Bin 计数或生产标识。
+          </Typography.Text>
+          <Typography.Text>
+            以下场景用于算法 Golden / 视觉回归，可验证指定 Pattern 或人为组合 Pattern。
           </Typography.Text>
           <Button
             type="primary"

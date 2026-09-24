@@ -402,7 +402,7 @@ def generate_pattern_dataset(
             coordinates,
             fail_count=fail_count,
             seed=seed,
-            cluster_fraction=profile_cluster_fraction or 0.11,
+            cluster_fraction=profile_cluster_fraction or 0.06,
         )
     elif pattern == "PRODUCTION_PROFILE_SCALE":
         fail_groups = _profile_fail_groups(

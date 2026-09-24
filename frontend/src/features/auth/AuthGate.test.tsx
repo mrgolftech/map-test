@@ -41,10 +41,11 @@ describe('AuthGate', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: /登\s*录/ }))
 
-    await waitFor(() => expect(loginAdmin).toHaveBeenCalledWith({
+    await waitFor(() => expect(loginAdmin).toHaveBeenCalled())
+    expect(vi.mocked(loginAdmin).mock.calls[0]?.[0]).toEqual({
       username: 'admin',
       password: 'secret-password',
-    }))
+    })
     expect(await screen.findByText('protected-workspace')).toBeInTheDocument()
   })
 

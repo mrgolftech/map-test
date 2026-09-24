@@ -97,6 +97,7 @@ def test_profile_drift_assets_match_manifest_and_parse_independently():
         assert dataset.summary.pass_die == wafer["pass"]
         assert dataset.summary.fail_die == wafer["fail"]
         assert dataset.summary.yield_ == pytest.approx(wafer["yield"])
+        assert {str(item.bin): item.count for item in dataset.bins} == wafer["bin_counts"]
         yields.append(dataset.summary.yield_ or 0.0)
 
     assert yields == sorted(yields, reverse=True)

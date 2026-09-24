@@ -22,6 +22,9 @@ Strict rules:
 12. If lot comparison facts are supplied, explain the yield trend and outlier
     with the wafer-level pattern evidence. Compare the main Fail Bin cluster
     ratio across wafers explicitly when supplied. Do not claim a confirmed cause.
+13. Cluster size and quadrant enrichment are separate aggregate statistics.
+    Never locate the largest cluster inside a quadrant unless its coordinates
+    are explicitly supplied; these inputs do not include cluster coordinates.
 
 Return exactly this shape:
 {

@@ -296,7 +296,7 @@ AI 只能在 Phase 1–4 的确定性事实稳定后进入。
 ## Phase 6 — Report / Polish
 
 - report export；
-- enhanced simulator（不得退化为单 Pattern Demo，持续维护 `MIXED_FAILURES` / `LONG_TAIL_MULTI_BIN` / `EDGE_DRIFT` 主演示基线）；
+- enhanced simulator（不得退化为单 Pattern Demo，持续维护 `PRODUCTION_PROFILE_COMPACT` / `PRODUCTION_PROFILE_SCALE` / `PROFILE_DRIFT` 主演示基线；旧 `MIXED_FAILURES` / `LONG_TAIL_MULTI_BIN` / `EDGE_DRIFT` 继续作为算法回归）；
 - more parser fixtures；
 - Visual QA；
 - performance profiling；

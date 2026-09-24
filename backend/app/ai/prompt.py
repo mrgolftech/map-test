@@ -1,6 +1,7 @@
 import json
 
 from app.schemas.analysis import AnalysisSummary
+from app.schemas.comparison import ComparisonData
 
 SYSTEM_PROMPT = """You are the explanation layer of a semiconductor wafer analysis platform.
 
@@ -18,6 +19,8 @@ Strict rules:
 10. Write the report in concise professional Chinese.
 11. Keep the JSON compact: at most four key findings, four spatial patterns,
     four possible causes, and four recommended checks. Avoid long repeated evidence.
+12. If lot comparison facts are supplied, explain the yield trend and outlier
+    with the wafer-level pattern evidence. Do not claim a confirmed cause.
 
 Return exactly this shape:
 {
@@ -130,8 +133,29 @@ def compact_analysis_payload(analysis: AnalysisSummary) -> dict[str, object]:
     }
 
 
-def build_user_prompt(analysis: AnalysisSummary) -> str:
+def build_user_prompt(analysis: AnalysisSummary, lot: ComparisonData | None = None) -> str:
     payload = compact_analysis_payload(analysis)
+    if lot is not None:
+        payload["lot_comparison"] = {
+            "lot_id": lot.lot_id,
+            "wafer_count": lot.yield_stats.wafer_count,
+            "yield_trend": [
+                point.model_dump(mode="json", by_alias=True) for point in lot.yield_trend
+            ],
+            "wafer_evidence": [
+                {
+                    "wafer_id": wafer.wafer_id,
+                    "yield": wafer.yield_,
+                    "fail_die": wafer.fail_die,
+                    "main_fail_bin": wafer.main_fail_bin,
+                    "main_pattern": wafer.main_pattern,
+                    "main_bin_cluster_ratio": wafer.cluster_ratio,
+                    "is_outlier": wafer.is_outlier,
+                }
+                for wafer in lot.wafers
+            ],
+            "limitations": lot.limitations,
+        }
     return (
         "以下 JSON 是平台已经完成的确定性分析结果。"
         "请只基于这些数据生成结构化诊断解释，不要重新计算或补造事实。\n"

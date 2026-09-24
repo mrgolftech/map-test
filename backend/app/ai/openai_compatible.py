@@ -106,6 +106,13 @@ class OpenAICompatibleProvider(AIProvider):
                 message="LLM response choice was invalid.",
                 status_code=502,
             )
+        if first.get("finish_reason") == "length":
+            raise AppError(
+                code="LLM_INVALID_RESPONSE",
+                message="LLM response was truncated by the output token limit.",
+                status_code=502,
+                details={"finish_reason": "length"},
+            )
         message = first.get("message")
         if not isinstance(message, dict):
             raise AppError(

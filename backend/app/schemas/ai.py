@@ -43,12 +43,12 @@ class AIReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     executive_summary: str = Field(min_length=1, max_length=2400)
-    key_findings: list[AIKeyFinding] = Field(default_factory=list, max_length=12)
-    spatial_patterns: list[AISpatialPattern] = Field(default_factory=list, max_length=8)
-    possible_causes: list[AIPossibleCause] = Field(default_factory=list, max_length=8)
-    recommended_checks: list[AIRecommendedCheck] = Field(default_factory=list, max_length=10)
+    key_findings: list[AIKeyFinding] = Field(max_length=12)
+    spatial_patterns: list[AISpatialPattern] = Field(max_length=8)
+    possible_causes: list[AIPossibleCause] = Field(max_length=8)
+    recommended_checks: list[AIRecommendedCheck] = Field(max_length=10)
     confidence: float = Field(ge=0.0, le=1.0)
-    limitations: list[str] = Field(default_factory=list, max_length=12)
+    limitations: list[str] = Field(max_length=12)
 
 
 class AIAnalyzeRequest(BaseModel):

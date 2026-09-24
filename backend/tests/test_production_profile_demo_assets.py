@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import pytest
-
 from app.analysis.engine import AnalysisEngine
 from app.core.config import get_settings
 from app.parsers.base import RawSource

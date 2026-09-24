@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     llm_model: str = ""
     llm_timeout_seconds: float = 45.0
     llm_max_retries: int = 2
-    llm_max_output_tokens: int = 2200
+    llm_max_output_tokens: int = 8192
 
     model_config = SettingsConfigDict(
         env_file=".env",

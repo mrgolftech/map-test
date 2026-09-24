@@ -28,8 +28,9 @@
 6. `docs/05_ENGINEERING_TEST_AND_DELIVERY.md`
 7. `docs/06_IMPLEMENTATION_ROADMAP.md`
 8. `docs/07_REFERENCE_PROJECTS_AND_ADOPTED_PRACTICES.md`
+9. `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`
 
-产品、架构、数据契约或 UI 基线发生变化时，必须同步相应文档。
+产品、架构、数据契约、UI 基线、演示样本或回归测试基线发生变化时，必须同步相应文档。
 
 ## 3. 产品定位
 
@@ -244,6 +245,8 @@ schema 修改必须 migration。
 - 含敏感生产信息的日志。
 
 回归测试优先使用脱敏 fixture / simulator。
+
+演示数据、作品样本、Golden Fixture、生产参考 Synthetic Dataset 与 Visual QA 必须遵循 `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`。最终演示不得退化为“一张 Wafer 只有一种故障 Pattern”；必须保留单片多 Fail Bin、生产规模多 Bin 和 Lot 异常三类主演示基线。
 
 ## 13. 分支和 PR
 

@@ -1,6 +1,5 @@
-from fastapi.testclient import TestClient
-
 from app.core.config import get_settings
+from fastapi.testclient import TestClient
 
 
 def test_protected_api_requires_login(raw_client: TestClient):

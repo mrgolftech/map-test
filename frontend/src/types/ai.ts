@@ -63,3 +63,17 @@ export type LLMConnectionResponse = {
   }
   meta: Record<string, unknown>
 }
+
+export type LLMModelListResponse = {
+  data: string[]
+  meta: Record<string, unknown>
+}
+
+export type LLMCandidate = {
+  base_url: string
+  api_key?: string
+}
+
+export type LLMSelectedCandidate = LLMCandidate & {
+  model: string
+}

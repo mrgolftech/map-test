@@ -54,3 +54,15 @@ class AnalysisRecord(Base):
         Index("ix_analysis_main_fail_bin", "main_fail_bin"),
         Index("ix_analysis_main_pattern", "main_pattern"),
     )
+
+
+class LLMRuntimeConfig(Base):
+    __tablename__ = "llm_runtime_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    base_url: Mapped[str] = mapped_column(String(512), nullable=False)
+    model: Mapped[str] = mapped_column(String(160), nullable=False)
+    encrypted_api_key: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )

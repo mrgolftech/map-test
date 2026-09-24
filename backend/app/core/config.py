@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     llm_base_url: str = ""
     llm_api_key: str = ""
     llm_model: str = ""
+    llm_settings_admin_token: str = ""
     llm_timeout_seconds: float = 45.0
     llm_max_retries: int = 2
     llm_max_output_tokens: int = 8192

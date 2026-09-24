@@ -88,6 +88,35 @@ class LLMConfigResponse(BaseModel):
     meta: dict[str, object] = Field(default_factory=dict)
 
 
+class LLMConfigSaveRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    provider_type: Literal["openai_compatible"] = "openai_compatible"
+    base_url: str = Field(min_length=8, max_length=512)
+    model: str = Field(min_length=1, max_length=160)
+    api_key: str | None = Field(default=None, max_length=4096)
+
+
+class LLMCandidateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    base_url: str = Field(min_length=8, max_length=512)
+    api_key: str | None = Field(default=None, max_length=4096)
+
+
+class LLMTestRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    base_url: str | None = Field(default=None, min_length=8, max_length=512)
+    model: str | None = Field(default=None, min_length=1, max_length=160)
+    api_key: str | None = Field(default=None, max_length=4096)
+
+
+class LLMModelsResponse(BaseModel):
+    data: list[str]
+    meta: dict[str, object] = Field(default_factory=dict)
+
+
 class LLMConnectionResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 

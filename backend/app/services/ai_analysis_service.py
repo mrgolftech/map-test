@@ -16,6 +16,7 @@ from app.schemas.ai import (
     LLMConnectionResult,
 )
 from app.services.analysis_history_service import AnalysisHistoryService
+from app.services.llm_settings_service import LLMSettingsService
 from app.services.lot_comparison_service import LotComparisonService
 
 
@@ -57,7 +58,9 @@ class AIAnalysisService:
         provider: AIProvider | None = None,
     ) -> None:
         self._session = session
-        self._settings = settings or get_settings()
+        self._settings = LLMSettingsService(
+            session, settings or get_settings()
+        ).effective_settings()
         self._provider = provider
 
     def config_status(self) -> LLMConfigStatus:

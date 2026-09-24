@@ -66,13 +66,20 @@ async def validation_error_handler(
     request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
+    issues = exc.errors()
+    if request.url.path.startswith("/api/v1/settings/llm") or request.url.path == "/api/v1/ai/test":
+        # Pydantic includes submitted values in validation errors; never echo credentials.
+        issues = [
+            {key: value for key, value in issue.items() if key in {"loc", "type", "msg"}}
+            for issue in issues
+        ]
     return JSONResponse(
         status_code=422,
         content=error_payload(
             request,
             "REQUEST_VALIDATION_ERROR",
             "Request validation failed.",
-            exc.errors(),
+            issues,
         ),
     )
 

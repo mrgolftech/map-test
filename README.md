@@ -58,9 +58,12 @@ AI 是可选能力；未配置时 Parser、确定性分析、Wafer Map、History
 LLM_BASE_URL=
 LLM_API_KEY=
 LLM_MODEL=
+LLM_SETTINGS_ADMIN_TOKEN=
 ```
 
-API Key 不会返回前端，也不得写入 Git 或日志。
+在服务端设置长度至少 24 字符的随机 `LLM_SETTINGS_ADMIN_TOKEN` 并重启，然后在「系统设置」页输入管理员令牌、API Base URL（例如 `https://example.com/v1`）和 API Key。点击「拉取 /v1/models」从上游获取模型 ID，选择模型后点击「测试选定模型」，成功后保存。也可手动输入模型 ID。页面输入的管理员令牌和 API Key 不存入浏览器本地存储；接口只返回是否已配置，不回显密钥。
+
+仅提供 OpenAI-compatible API。配置写入 SQLite，API Key 使用管理员令牌派生的密钥加密；更新令牌会令旧密文无法解密，换令牌前请备份或清除 `llm_runtime_config` 中的旧记录并重新输入 API Key。使用环境变量配置的部署可不启用页面编辑功能。请限制设置页面及管理接口的访问范围，勿把管理员令牌或 API Key 写入 Git、截图或日志。数据库迁移在启动前执行 `alembic upgrade head`。
 
 ## 开发必读
 

@@ -16,6 +16,8 @@ Strict rules:
 8. RECOMMENDATION must be a concrete verification action.
 9. Return JSON only. No markdown fences or prose outside JSON.
 10. Write the report in concise professional Chinese.
+11. Keep the JSON compact: at most four key findings, four spatial patterns,
+    four possible causes, and four recommended checks. Avoid long repeated evidence.
 
 Return exactly this shape:
 {
@@ -44,17 +46,40 @@ Return exactly this shape:
 
 
 def compact_analysis_payload(analysis: AnalysisSummary) -> dict[str, object]:
+    bin_counts = {item.soft_bin: item.count for item in analysis.bin_stats}
     fail_bins = [
-        item
-        for item in analysis.bin_stats
-        if item.fail_share is not None and item.count > 0
+        item for item in analysis.bin_stats if item.fail_share is not None and item.count > 0
     ]
-    top_fail_bins = sorted(
+    ranked_fail_bins = sorted(
         fail_bins,
         key=lambda item: item.fail_share or 0.0,
         reverse=True,
-    )[:8]
+    )
+    top_fail_bins = ranked_fail_bins[:8]
+    significant_patterns = sorted(
+        (
+            item
+            for item in analysis.patterns
+            if item.pattern != "RANDOM"
+            and item.soft_bin is not None
+            and bin_counts.get(item.soft_bin, 0) >= max(4, int(analysis.summary.fail_die * 0.003))
+        ),
+        key=lambda item: (-bin_counts.get(item.soft_bin or -1, 0), -item.score),
+    )
+    priority_bin_ids = {item.soft_bin for item in significant_patterns}
+    top_fail_bins.extend(item for item in ranked_fail_bins[8:] if item.soft_bin in priority_bin_ids)
+    top_fail_bins = top_fail_bins[:10]
     top_ids = {item.soft_bin for item in top_fail_bins}
+    selected_patterns = significant_patterns[:10]
+    selected_patterns.extend(
+        item
+        for item in analysis.patterns
+        if item.pattern == "RANDOM"
+        and item.soft_bin in top_ids
+        and item.soft_bin is not None
+        and bin_counts.get(item.soft_bin, 0) >= analysis.summary.fail_die * 0.03
+    )
+    selected_patterns = selected_patterns[:12]
 
     spatial = []
     for item in analysis.spatial_by_bin:
@@ -96,18 +121,11 @@ def compact_analysis_payload(analysis: AnalysisSummary) -> dict[str, object]:
             for item in top_fail_bins
         ],
         "region_stats": {
-            key: value.model_dump(mode="json")
-            for key, value in analysis.region_stats.items()
+            key: value.model_dump(mode="json") for key, value in analysis.region_stats.items()
         },
         "spatial_by_top_fail_bin": spatial,
-        "patterns": [
-            item.model_dump(mode="json")
-            for item in analysis.patterns[:12]
-        ],
-        "deterministic_findings": [
-            item.model_dump(mode="json")
-            for item in analysis.top_findings
-        ],
+        "patterns": [item.model_dump(mode="json") for item in selected_patterns],
+        "deterministic_findings": [item.model_dump(mode="json") for item in analysis.top_findings],
         "analysis_limitations": analysis.limitations,
     }
 

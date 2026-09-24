@@ -394,6 +394,9 @@ Bin 是测试分类，Pattern 是空间特征，同一晶圆可以有多个 Bin 
 可保留少量主要 RANDOM Bin 作为对照；小样本 Pattern 必须伴随 Bin 数量与局限性。
 当前 OpenAI-compatible 默认输出上限为 8192 tokens，以容纳模型内部推理与完整 JSON。
 若上游返回 `finish_reason=length`，按截断响应报错，不把残缺 JSON 作为正常诊断。
+对已保存的同 Product、同 Lot 多片晶圆，单片 AI 分析会附带兼容的 Lot
+确定性比较摘要（Yield 趋势、离群标识、主 Bin 聚集比）；报告仍保存于当前分析记录。
+只传结构化数字和限制，不传 Lot Mini Map 或逐 Die 坐标。
 
 ## 16. LLM 输出校验
 

@@ -28,6 +28,7 @@ PatternName = Literal[
     "LINE",
     "MULTI_PATTERN",
     "MIXED_FAILURES",
+    "LONG_TAIL_MULTI_BIN",
 ]
 
 # A deliberately synthetic single-wafer scenario: distinct test bins can have
@@ -40,6 +41,19 @@ MIXED_FAILURE_SPECS = (
     (22, "Pout_margin", "RING", 7),
     (27, "GADC", "RANDOM", 4),
     (28, "ICC_sleep", "RANDOM", 2),
+)
+
+# Aggregate features only: large wafer, one dominant bin, and a long tail.
+# Counts, bin identifiers for the tail, and every coordinate are synthetic.
+LONG_TAIL_SPECS = (
+    (18, "RF_LOW", 2700), (20, "RF_HIGH", 1100),
+    (16, "BIT_ERROR", 560), (22, "RF_MARGIN", 370),
+    (27, "ADC_CHECK", 300), (28, "SLEEP_CURRENT", 160),
+    (30, "CURRENT_CHECK", 90), (32, "IDLE_CHECK", 60),
+    (35, "POWER_CHECK", 45), (19, "GAIN_CHECK", 40),
+    (36, "TIMING_CHECK", 35), (21, "VOLTAGE_CHECK", 30),
+    (33, "CLOCK_CHECK", 25), (24, "TEMP_CHECK", 20),
+    (29, "NOISE_CHECK", 15), (34, "OTHER_CHECK", 10),
 )
 
 
@@ -161,6 +175,7 @@ def generate_pattern_dataset(
         seed=seed,
         rows=rows,
         columns=columns,
+        radius_scale=1.0 if pattern == "LONG_TAIL_MULTI_BIN" else 0.92,
         bins=[],
     )
     coordinates = active_coordinates(config)
@@ -170,6 +185,8 @@ def generate_pattern_dataset(
         raise ValueError("MULTI_PATTERN requires at least two failing dies.")
     if pattern == "MIXED_FAILURES" and fail_count < len(MIXED_FAILURE_SPECS):
         raise ValueError("MIXED_FAILURES requires at least six failing dies.")
+    if pattern == "LONG_TAIL_MULTI_BIN" and fail_count < len(LONG_TAIL_SPECS):
+        raise ValueError("LONG_TAIL_MULTI_BIN requires at least 16 failing dies.")
 
     fail_groups: list[tuple[int, str, set[tuple[int, int]]]] = []
     if pattern == "MULTI_PATTERN":
@@ -215,6 +232,29 @@ def generate_pattern_dataset(
                 fail_count=count,
                 seed=seed + index,
             )
+            fail_groups.append((soft_bin, description, selected))
+            remaining = [item for item in remaining if item not in selected]
+            assigned += count
+    elif pattern == "LONG_TAIL_MULTI_BIN":
+        remaining = coordinates.copy()
+        total_weight = sum(weight for _, _, weight in LONG_TAIL_SPECS)
+        assigned = 0
+        rng = Random(seed)
+        for index, (soft_bin, description, weight) in enumerate(LONG_TAIL_SPECS):
+            count = (
+                fail_count - assigned
+                if index == len(LONG_TAIL_SPECS) - 1
+                else max(1, fail_count * weight // total_weight)
+            )
+            count = min(count, fail_count - assigned - (len(LONG_TAIL_SPECS) - index - 1))
+            if index == 0:
+                localized = _select_fail_coordinates(
+                    "CLUSTER", remaining, fail_count=count * 3 // 5, seed=seed
+                )
+                candidates = [item for item in remaining if item not in localized]
+                selected = localized | set(rng.sample(candidates, count - len(localized)))
+            else:
+                selected = set(rng.sample(remaining, count))
             fail_groups.append((soft_bin, description, selected))
             remaining = [item for item in remaining if item not in selected]
             assigned += count

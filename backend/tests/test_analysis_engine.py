@@ -131,3 +131,20 @@ def test_mixed_failures_single_wafer_has_separate_bin_distributions_and_findings
         for item in summary.top_findings
         if item.kind == "JUDGMENT" and "for Bin " in item.text
     }) == 3
+
+
+def test_long_tail_multibin_has_dominant_cluster_and_distributed_other_bins():
+    dataset = generate_pattern_dataset(
+        "LONG_TAIL_MULTI_BIN", rows=88, columns=128, fail_count=5560
+    )
+    summary = AnalysisEngine().analyze(dataset)
+
+    assert dataset.summary.tested_die == 8844
+    assert dataset.summary.pass_die == 3284
+    assert len(dataset.bins) == 17
+    assert dataset.bins[1].count == 2700
+    assert all(item.count > 0 for item in dataset.bins)
+    assert "LOCALIZED_CLUSTER" in _patterns_for(summary, 18)
+    for bin_id in (20, 16, 22, 27, 28):
+        assert "RANDOM" in _patterns_for(summary, bin_id)
+    assert len({(item.row, item.column) for item in dataset.dies}) == 8844

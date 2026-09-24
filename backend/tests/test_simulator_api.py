@@ -100,3 +100,20 @@ def test_generate_mixed_failure_wafer_and_reject_too_few_failures(client):
         json={"pattern": "MIXED_FAILURES", "fail_count": 5},
     )
     assert invalid.status_code == 422
+
+
+def test_generate_long_tail_multibin_wafer(client):
+    response = client.post(
+        "/api/v1/simulator/wafer",
+        json={
+            "pattern": "LONG_TAIL_MULTI_BIN",
+            "rows": 88,
+            "columns": 128,
+            "fail_count": 5560,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["meta"]["synthetic"] is True
+    assert len(payload["data"]["bins"]) == 17
+    assert payload["data"]["summary"]["tested_die"] == 8844

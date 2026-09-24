@@ -80,7 +80,9 @@ export function UploadPage() {
     mutationFn: async (pattern: SyntheticPattern) => {
       const generated = await generateDemoWafer({
         pattern,
-        fail_count: pattern === 'MIXED_FAILURES' ? 300 : pattern === 'RANDOM' ? 36 : 48,
+        fail_count: pattern === 'LONG_TAIL_MULTI_BIN' ? 5560 : pattern === 'MIXED_FAILURES' ? 300 : pattern === 'RANDOM' ? 36 : 48,
+        rows: pattern === 'LONG_TAIL_MULTI_BIN' ? 88 : 24,
+        columns: pattern === 'LONG_TAIL_MULTI_BIN' ? 128 : 32,
         product_id: 'DEMO_WAFER_PRODUCT',
         lot_id: `DEMO-${pattern}`,
         wafer_id: '01',
@@ -251,6 +253,17 @@ export function UploadPage() {
           </Button>
           <Typography.Text type="secondary">
             合成示例：边缘、中心、局部聚集、环形和离散失效共存；数据与生产样例无对应关系。
+          </Typography.Text>
+          <Button
+            icon={<FlaskConical size={16} />}
+            disabled={demoLotMutation.isPending}
+            loading={demoMutation.isPending && demoMutation.variables === 'LONG_TAIL_MULTI_BIN'}
+            onClick={() => demoMutation.mutate('LONG_TAIL_MULTI_BIN')}
+          >
+            生成生产规模多 Bin 测试集（16 个 Fail Bin）
+          </Button>
+          <Typography.Text type="secondary">
+            88 × 128 网格，主要失效 Bin 与长尾 Bin 共存；全部位置和数量由固定种子重新生成。
           </Typography.Text>
           <Space wrap>
             {demoPatterns.map((pattern) => (

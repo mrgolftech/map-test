@@ -19,6 +19,7 @@ class SyntheticPattern(StrEnum):
     LINE = "LINE"
     MULTI_PATTERN = "MULTI_PATTERN"
     MIXED_FAILURES = "MIXED_FAILURES"
+    LONG_TAIL_MULTI_BIN = "LONG_TAIL_MULTI_BIN"
 
 
 class DemoLotScenario(StrEnum):
@@ -31,7 +32,7 @@ class SyntheticWaferRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     pattern: SyntheticPattern = SyntheticPattern.EDGE
-    fail_count: int = Field(default=48, ge=1, le=5000)
+    fail_count: int = Field(default=48, ge=1, le=65535)
     seed: int = 20260924
     product_id: str = Field(default="DEMO_WAFER", min_length=1, max_length=128)
     lot_id: str = Field(default="DEMO001", min_length=1, max_length=128)

@@ -66,3 +66,32 @@ def test_mixed_failures_pat_cp_round_trip_preserves_all_fail_bins():
     ] == [
         (item.row, item.column, item.soft_bin) for item in expected.dies
     ]
+
+
+def test_long_tail_multibin_pat_cp_fixture_round_trip():
+    expected = generate_pattern_dataset(
+        "LONG_TAIL_MULTI_BIN", rows=88, columns=128, fail_count=5560
+    )
+    fixture_dir = Path(__file__).parent / "fixtures" / "long_tail_multibin"
+    pat = (fixture_dir / "DEMO_SCALE.01.PAT").read_text(encoding="utf-8")
+    cp = (fixture_dir / "DEMO_SCALE.CP1").read_text(encoding="utf-8")
+    assert pat == serialize_pat(expected, filename="DEMO_SCALE.01.PAT")
+    assert cp == serialize_cp1(expected)
+
+    result = FileParseService(get_settings()).parse_sources(
+        [
+            RawSource("DEMO_SCALE.01.PAT", pat.encode()),
+            RawSource("DEMO_SCALE.CP1", cp.encode()),
+        ]
+    )
+    assert result.status == ParseStatus.VALID
+    assert result.dataset is not None
+    assert result.dataset.summary == expected.summary
+    assert {item.bin: item.count for item in result.dataset.bins} == {
+        item.bin: item.count for item in expected.bins
+    }
+    assert [
+        (item.row, item.column, item.soft_bin) for item in result.dataset.dies
+    ] == [
+        (item.row, item.column, item.soft_bin) for item in expected.dies
+    ]

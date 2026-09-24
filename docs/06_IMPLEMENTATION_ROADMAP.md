@@ -146,6 +146,7 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 - Cluster；
 - Line；
 - 单片多 Fail Bin（不同 Bin 分别注入 Edge / Center / Cluster / Ring 等特征）；
+- 生产规模合成单片（16 个 Fail Bin，主 Bin 局部聚集，其余包含离散长尾）；
 - 固定 seed；
 - region/bin count conservation；
 - enrichment formula；

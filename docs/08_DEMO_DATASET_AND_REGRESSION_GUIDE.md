@@ -256,7 +256,7 @@ PAT / CP
 
 ## 5. Fixture 构建规范
 
-每个正式 Demo Scenario 应优先提供：
+正式主演示数据的仓库级真值位于 `backend/tests/fixtures/production_profile_demo/manifest.json`；可上传 PAT / CP 由 `python -m app.simulator.demo_assets` 使用固定 seed 确定性重建。CI 必须验证重建结果与 manifest 的 exact facts 一致。\n\n每个正式 Demo Scenario 应优先提供：
 
 ```text
 backend/tests/fixtures/<scenario>/

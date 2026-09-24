@@ -194,6 +194,43 @@ def test_ai_accepts_markdown_json_fence_and_rejects_invalid_json(client, monkeyp
     assert client.get(f"/api/v1/analyses/{analysis_id}").json()["data"]["ai_report"] is not None
 
 
+def test_ai_on_lot_wafer_receives_deterministic_trend_and_outlier(client, monkeypatch):
+    configure_llm(monkeypatch)
+    generated = client.post(
+        "/api/v1/simulator/lot",
+        json={"scenario": "EDGE_DRIFT", "seed": 20260924},
+    )
+    assert generated.status_code == 200
+    analysis_ids = []
+    for dataset in generated.json()["data"]["datasets"]:
+        response = client.post(
+            "/api/v1/analyses",
+            json={"dataset": dataset, "sources": [], "validation_issues": []},
+        )
+        assert response.status_code == 200
+        analysis_ids.append(response.json()["data"]["id"])
+
+    class CapturingProvider(FakeProvider):
+        prompt = ""
+
+        def complete(self, **kwargs):
+            self.prompt = kwargs["user_prompt"]
+            return super().complete(**kwargs)
+
+    fake = CapturingProvider()
+    monkeypatch.setattr(ai_service_module, "create_provider", lambda _settings: fake)
+    response = client.post(f"/api/v1/analyses/{analysis_ids[-1]}/ai")
+
+    assert response.status_code == 200
+    payload = json.loads(fake.prompt.split("\n", 1)[1])
+    lot = payload["lot_comparison"]
+    assert lot["wafer_count"] == 5
+    assert len(lot["yield_trend"]) == 5
+    assert lot["yield_trend"][-1]["is_outlier"] is True
+    assert lot["wafer_evidence"][-1]["main_bin_cluster_ratio"] is not None
+    assert "map_rows" not in fake.prompt
+
+
 def test_ai_unconfigured_degrades_without_affecting_analysis(client):
     analysis_id = persist(client)
 

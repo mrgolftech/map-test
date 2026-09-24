@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, AutoComplete, Button, Descriptions, Form, Input, Space, Tag, Typography } from 'antd'
 import { PlugZap } from 'lucide-react'
@@ -11,6 +11,7 @@ export function SettingsPage() {
   const [form] = Form.useForm<LLMFormValues>()
   const [adminToken, setAdminToken] = useState('')
   const [adminError, setAdminError] = useState(false)
+  const initialized = useRef(false)
   const queryClient = useQueryClient()
   const configQuery = useQuery({ queryKey: ['llm-config'], queryFn: getLLMConfig })
   const modelsMutation = useMutation({
@@ -35,7 +36,11 @@ export function SettingsPage() {
 
   const config = configQuery.data?.data
   useEffect(() => {
-    if (config) form.setFieldsValue({ base_url: config.base_url ?? '', model: config.model ?? '' })
+    if (config && !initialized.current) {
+      initialized.current = true
+      if (!form.isFieldTouched('base_url')) form.setFieldValue('base_url', config.base_url ?? '')
+      if (!form.isFieldTouched('model')) form.setFieldValue('model', config.model ?? '')
+    }
   }, [config, form])
 
   function withAdmin(action: () => void) {
@@ -87,8 +92,8 @@ export function SettingsPage() {
           <Alert type="info" showIcon message="配置仅在服务端保存"
             description="首次使用需在服务器设置 LLM_SETTINGS_ADMIN_TOKEN（至少 24 字符）。管理员令牌和 API Key 仅用于当前页面操作；保存后不会从接口回显。更换令牌前需先清除旧加密配置，并重新输入 API Key。" />
           <Form form={form} layout="vertical" onFinish={(values) => withAdmin(() => saveMutation.mutate(values))}>
-            <Form.Item label="管理员令牌">
-              <Input.Password autoComplete="off" value={adminToken}
+            <Form.Item label="管理员令牌" htmlFor="llm-admin-token">
+              <Input.Password id="llm-admin-token" autoComplete="off" value={adminToken}
                 onChange={(event) => { setAdminToken(event.target.value); setAdminError(false) }}
                 placeholder="仅在当前页面临时使用" />
             </Form.Item>

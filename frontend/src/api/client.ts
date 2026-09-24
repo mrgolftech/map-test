@@ -30,6 +30,13 @@ export async function apiRequest<T>(
   const response = await fetch(input, init)
 
   if (!response.ok) {
+    if (
+      response.status === 401
+      && input !== '/api/v1/auth/login'
+      && typeof window !== 'undefined'
+    ) {
+      window.dispatchEvent(new Event('wafer-auth-expired'))
+    }
     let payload: ErrorPayload = {}
     try {
       payload = (await response.json()) as ErrorPayload

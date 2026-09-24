@@ -9,7 +9,6 @@ from app.services.llm_settings_service import LLMSettingsService
 from app.simulator.patterns import generate_pattern_dataset
 
 TOKEN = "settings-admin-token-with-enough-length"
-HEADER = {"X-LLM-Settings-Token": TOKEN}
 CONFIG = {
     "base_url": "https://models.example.test/v1",
     "model": "selected-model",
@@ -17,18 +16,15 @@ CONFIG = {
 }
 
 
-def enable_admin(monkeypatch):
+def enable_encryption_secret(monkeypatch):
     monkeypatch.setenv("LLM_SETTINGS_ADMIN_TOKEN", TOKEN)
     get_settings.cache_clear()
 
 
-def test_settings_require_admin_and_encrypt_persisted_key(client, monkeypatch):
-    enable_admin(monkeypatch)
-    assert client.put("/api/v1/settings/llm", json=CONFIG).status_code == 403
-    assert client.post("/api/v1/settings/llm/models", json=CONFIG).status_code == 403
-    assert client.post("/api/v1/settings/llm/test", json=CONFIG).status_code == 403
+def test_settings_encrypt_persisted_key(client, monkeypatch):
+    enable_encryption_secret(monkeypatch)
 
-    saved = client.put("/api/v1/settings/llm", json=CONFIG, headers=HEADER)
+    saved = client.put("/api/v1/settings/llm", json=CONFIG)
     assert saved.status_code == 200, saved.text
     assert saved.json()["data"] == {
         "configured": True,
@@ -82,7 +78,7 @@ def test_settings_require_admin_and_encrypt_persisted_key(client, monkeypatch):
 
 
 def test_models_and_candidate_connection_use_selected_key_without_saving(client, monkeypatch):
-    enable_admin(monkeypatch)
+    enable_encryption_secret(monkeypatch)
     seen = []
 
     def respond(request):
@@ -100,12 +96,11 @@ def test_models_and_candidate_connection_use_selected_key_without_saving(client,
         "Client",
         lambda **kwargs: original_client(**{**kwargs, "transport": transport}),
     )
-    # The provider uses the same httpx module.
     candidate = {"base_url": CONFIG["base_url"], "api_key": CONFIG["api_key"]}
-    models = client.post("/api/v1/settings/llm/models", json=candidate, headers=HEADER)
+    models = client.post("/api/v1/settings/llm/models", json=candidate)
     assert models.status_code == 200, models.text
     assert models.json()["data"] == ["alpha", "beta"]
-    connected = client.post("/api/v1/settings/llm/test", json=CONFIG, headers=HEADER)
+    connected = client.post("/api/v1/settings/llm/test", json=CONFIG)
     assert connected.status_code == 200, connected.text
     assert connected.json()["data"]["model"] == "selected-model"
     assert [request.url.path for request in seen] == ["/v1/models", "/v1/chat/completions"]
@@ -116,7 +111,7 @@ def test_models_and_candidate_connection_use_selected_key_without_saving(client,
 
 
 def test_models_invalid_response_and_upstream_error(client, monkeypatch):
-    enable_admin(monkeypatch)
+    enable_encryption_secret(monkeypatch)
     original_client = httpx.Client
     candidate = {"base_url": CONFIG["base_url"], "api_key": CONFIG["api_key"]}
     for upstream, expected in [
@@ -134,33 +129,32 @@ def test_models_invalid_response_and_upstream_error(client, monkeypatch):
             "Client",
             make_client(chosen_transport=transport),
         )
-        response = client.post("/api/v1/settings/llm/models", json=candidate, headers=HEADER)
+        response = client.post("/api/v1/settings/llm/models", json=candidate)
         assert response.status_code == 502
         assert response.json()["error"]["code"] == expected
     assert client.get("/api/v1/settings/llm").status_code == 200
 
 
 def test_invalid_api_url_rejected(client, monkeypatch):
-    enable_admin(monkeypatch)
+    enable_encryption_secret(monkeypatch)
     for value in [
         "http://localhost:9000/v1",
         "http://127.0.0.1/v1",
         "https://models.example.test:99999/v1",
     ]:
         response = client.put(
-            "/api/v1/settings/llm", json={**CONFIG, "base_url": value}, headers=HEADER
+            "/api/v1/settings/llm", json={**CONFIG, "base_url": value}
         )
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "LLM_URL_INVALID"
 
 
 def test_invalid_key_validation_does_not_echo_key(client, monkeypatch):
-    enable_admin(monkeypatch)
+    enable_encryption_secret(monkeypatch)
     invalid_key = "sensitive-" + "x" * 4096
     response = client.put(
         "/api/v1/settings/llm",
         json={**CONFIG, "api_key": invalid_key},
-        headers=HEADER,
     )
     assert response.status_code == 422
     assert invalid_key not in response.text

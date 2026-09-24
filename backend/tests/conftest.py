@@ -6,6 +6,9 @@ from fastapi.testclient import TestClient
 
 os.environ["DATABASE_URL"] = "sqlite:///./.test-data/test.db"
 os.environ["STATIC_DIR"] = "./.missing-static"
+os.environ["ADMIN_USERNAME"] = "admin"
+os.environ["ADMIN_PASSWORD"] = "test-admin-password"
+os.environ["ADMIN_SESSION_SECRET"] = "test-session-secret-that-is-at-least-32-bytes"
 
 from app.core.config import get_settings  # noqa: E402
 from app.db import models as db_models  # noqa: E402, F401
@@ -32,5 +35,15 @@ def reset_state(tmp_path: Path):
 
 
 @pytest.fixture
-def client() -> TestClient:
+def raw_client() -> TestClient:
     return TestClient(create_app())
+
+
+@pytest.fixture
+def client(raw_client: TestClient) -> TestClient:
+    response = raw_client.post(
+        "/api/v1/auth/login",
+        json={"username": "admin", "password": "test-admin-password"},
+    )
+    assert response.status_code == 200, response.text
+    return raw_client

@@ -30,24 +30,21 @@ describe('SettingsPage', () => {
     renderSettings()
     await screen.findByDisplayValue('https://example.test/v1')
 
-    fireEvent.change(screen.getByLabelText('管理员令牌'), { target: { value: 'admin-token' } })
     fireEvent.change(screen.getByLabelText('API Base URL'), { target: { value: 'https://example.test/v1' } })
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'temporary-key' } })
     fireEvent.click(screen.getByRole('button', { name: '拉取 /v1/models' }))
     await waitFor(() => expect(fetchLLMModels).toHaveBeenCalledWith(
-      { base_url: 'https://example.test/v1', api_key: 'temporary-key' }, 'admin-token',
+      { base_url: 'https://example.test/v1', api_key: 'temporary-key' },
     ))
 
     fireEvent.click(screen.getByRole('button', { name: /测试选定模型/ }))
     await waitFor(() => expect(testLLMConnection).toHaveBeenCalledWith(
       { base_url: 'https://example.test/v1', model: 'demo-model', api_key: 'temporary-key' },
-      'admin-token',
     ))
 
     fireEvent.click(screen.getByRole('button', { name: '保存配置' }))
     await waitFor(() => expect(saveLLMConfig).toHaveBeenCalledWith(
       { base_url: 'https://example.test/v1', model: 'demo-model', api_key: 'temporary-key' },
-      'admin-token',
     ))
     expect(screen.getByLabelText('API Key')).toHaveValue('')
   })

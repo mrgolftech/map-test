@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, AutoComplete, Button, Descriptions, Form, Input, Space, Tag, Typography } from 'antd'
 import { PlugZap } from 'lucide-react'
@@ -9,24 +9,22 @@ type LLMFormValues = { base_url: string; model: string; api_key?: string }
 
 export function SettingsPage() {
   const [form] = Form.useForm<LLMFormValues>()
-  const [adminToken, setAdminToken] = useState('')
-  const [adminError, setAdminError] = useState(false)
   const initialized = useRef(false)
   const queryClient = useQueryClient()
   const configQuery = useQuery({ queryKey: ['llm-config'], queryFn: getLLMConfig })
   const modelsMutation = useMutation({
     mutationFn: (values: LLMFormValues) => fetchLLMModels(
-      { base_url: values.base_url, api_key: values.api_key || undefined }, adminToken,
+      { base_url: values.base_url, api_key: values.api_key || undefined },
     ),
   })
   const testMutation = useMutation({
     mutationFn: (values: LLMFormValues) => testLLMConnection(
-      { base_url: values.base_url, model: values.model, api_key: values.api_key || undefined }, adminToken,
+      { base_url: values.base_url, model: values.model, api_key: values.api_key || undefined },
     ),
   })
   const saveMutation = useMutation({
     mutationFn: (values: LLMFormValues) => saveLLMConfig(
-      { base_url: values.base_url, model: values.model, api_key: values.api_key || undefined }, adminToken,
+      { base_url: values.base_url, model: values.model, api_key: values.api_key || undefined },
     ),
     onSuccess: () => {
       form.setFieldValue('api_key', undefined)
@@ -43,22 +41,16 @@ export function SettingsPage() {
     }
   }, [config, form])
 
-  function withAdmin(action: () => void) {
-    if (!adminToken.trim()) { setAdminError(true); return }
-    setAdminError(false)
-    action()
-  }
-
   function fetchModels() {
-    withAdmin(() => {
-      void form.validateFields(['base_url']).then(() => modelsMutation.mutate(form.getFieldsValue())).catch(() => undefined)
-    })
+    void form.validateFields(['base_url'])
+      .then(() => modelsMutation.mutate(form.getFieldsValue()))
+      .catch(() => undefined)
   }
 
   function testModel() {
-    withAdmin(() => {
-      void form.validateFields(['base_url', 'model']).then(() => testMutation.mutate(form.getFieldsValue())).catch(() => undefined)
-    })
+    void form.validateFields(['base_url', 'model'])
+      .then(() => testMutation.mutate(form.getFieldsValue()))
+      .catch(() => undefined)
   }
 
   const models = modelsMutation.data?.data ?? []
@@ -89,15 +81,13 @@ export function SettingsPage() {
             <Descriptions.Item label="Base URL">{config?.base_url ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="模型">{config?.model ?? '—'}</Descriptions.Item>
           </Descriptions>
-          <Alert type="info" showIcon message="配置仅在服务端保存"
-            description="首次使用需在服务器设置 LLM_SETTINGS_ADMIN_TOKEN（至少 24 字符）。管理员令牌和 API Key 仅用于当前页面操作；保存后不会从接口回显。更换令牌前需先清除旧加密配置，并重新输入 API Key。" />
-          <Form form={form} layout="vertical" onFinish={(values) => withAdmin(() => saveMutation.mutate(values))}>
-            <Form.Item label="管理员令牌" htmlFor="llm-admin-token">
-              <Input.Password id="llm-admin-token" autoComplete="off" value={adminToken}
-                onChange={(event) => { setAdminToken(event.target.value); setAdminError(false) }}
-                placeholder="仅在当前页面临时使用" />
-            </Form.Item>
-            {adminError && <Alert type="warning" showIcon message="请先输入管理员令牌" />}
+          <Alert
+            type="info"
+            showIcon
+            message="配置受管理员登录保护"
+            description="API Key 只在服务端保存并加密，不会从接口回显。LLM_SETTINGS_ADMIN_TOKEN 仅作为服务端加密密钥使用，不再需要在浏览器中重复输入。"
+          />
+          <Form form={form} layout="vertical" onFinish={(values) => saveMutation.mutate(values)}>
             <Form.Item label="接入类型"><Input value="OpenAI-compatible API" readOnly /></Form.Item>
             <Form.Item name="base_url" label="API Base URL"
               rules={[{ required: true, type: 'url', message: '请输入完整的 http(s) URL，如 https://example.com/v1' }]}>

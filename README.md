@@ -30,7 +30,8 @@ PAT / CP
 - OpenAI-compatible LLM Provider，结构化 FACT/JUDGMENT/HYPOTHESIS/RECOMMENDATION 输出；
 - AI 报告随分析历史持久化，LLM 不可用时仍可恢复已保存报告；
 - 脱敏 Simulator：单 Pattern Golden Set、单片多 Fail Bin、生产规模长尾多 Bin、演示 Lot；
-- 独立 HTML 工程报告，可由浏览器打印/另存为 PDF。
+- 独立 HTML 工程报告，可由浏览器打印/另存为 PDF；
+- 管理员登录、受保护 API、统一产品标识，以及参考 `mrgolftech/clash-sub` 信息层级的响应式管理首页。
 
 ## 核心原则
 
@@ -48,6 +49,22 @@ PAT / CP
 - Test: Vitest + React Testing Library + pytest
 - Delivery: Docker + GitHub Actions
 
+## 管理员登录
+
+除健康检查、版本和登录会话端点外，业务 API 默认要求管理员登录。浏览器使用 HttpOnly 签名会话 Cookie，不在 localStorage 中保存管理员密码或访问令牌。
+
+服务端至少配置：
+
+```text
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=<strong-password>
+ADMIN_SESSION_SECRET=<random-string-at-least-32-characters>
+ADMIN_COOKIE_SECURE=false
+ADMIN_SESSION_MAX_AGE_SECONDS=43200
+```
+
+生产环境通过 HTTPS 提供服务时，将 `ADMIN_COOKIE_SECURE=true`。`ADMIN_SESSION_SECRET` 必须在重启及多实例之间保持一致，并与密码一样作为服务器秘密管理，禁止提交 Git 或写入前端。
+
 ## LLM 配置
 
 AI 是可选能力；未配置时 Parser、确定性分析、Wafer Map、History 和 Lot compare 均正常工作。
@@ -61,9 +78,9 @@ LLM_MODEL=
 LLM_SETTINGS_ADMIN_TOKEN=
 ```
 
-在服务端设置长度至少 24 字符的随机 `LLM_SETTINGS_ADMIN_TOKEN` 并重启，然后在「系统设置」页输入管理员令牌、API Base URL（例如 `https://example.com/v1`）和 API Key。点击「拉取 /v1/models」从上游获取模型 ID，选择模型后点击「测试选定模型」，成功后保存。也可手动输入模型 ID。页面输入的管理员令牌和 API Key 不存入浏览器本地存储；接口只返回是否已配置，不回显密钥。
+登录管理员后，可在「系统设置」页填写 API Base URL（例如 `https://example.com/v1`）和 API Key，点击「拉取 /v1/models」获取上游模型 ID，选择模型后执行连通性测试并保存。API Key 不会从接口回显，也不会写入浏览器本地存储。
 
-仅提供 OpenAI-compatible API。配置写入 SQLite，API Key 使用管理员令牌派生的密钥加密；更新令牌会令旧密文无法解密，换令牌前请备份或清除 `llm_runtime_config` 中的旧记录并重新输入 API Key。使用环境变量配置的部署可不启用页面编辑功能。请限制设置页面及管理接口的访问范围，勿把管理员令牌或 API Key 写入 Git、截图或日志。数据库迁移在启动前执行 `alembic upgrade head`。
+仅提供 OpenAI-compatible API。页面保存的配置写入 SQLite，API Key 使用服务端 `LLM_SETTINGS_ADMIN_TOKEN` 派生的密钥加密；该变量长度至少 24 字符，只存在服务器侧，不再由浏览器重复输入。更新该密钥会令旧密文无法解密，轮换前需清除旧 `llm_runtime_config` 并重新保存 API Key。数据库迁移在启动前执行 `alembic upgrade head`。
 
 ## 开发必读
 
@@ -76,7 +93,8 @@ LLM_SETTINGS_ADMIN_TOKEN=
 - `docs/05_ENGINEERING_TEST_AND_DELIVERY.md`：工程、测试、CI、Docker、敏感数据与 DoD
 - `docs/06_IMPLEMENTATION_ROADMAP.md`：实现顺序与阶段退出条件
 - `docs/07_REFERENCE_PROJECTS_AND_ADOPTED_PRACTICES.md`：上游参考项目与采用边界
-- `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`：演示样本、Synthetic Fixture、作品验收与回归测试基线\n- `backend/tests/fixtures/production_profile_demo/`：三套正式主演示数据的 manifest、生成方法与回归入口
+- `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`：演示样本、Synthetic Fixture、作品验收与回归测试基线
+- `backend/tests/fixtures/production_profile_demo/`：三套正式主演示数据的 manifest、生成方法与回归入口
 
 ## 实现优先级
 

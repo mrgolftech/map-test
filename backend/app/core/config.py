@@ -10,6 +10,12 @@ class Settings(BaseSettings):
     database_url: str = "sqlite:///./data/map-test.db"
     static_dir: str = "/app/static"
 
+    admin_username: str = "admin"
+    admin_password: str = ""
+    admin_session_secret: str = ""
+    admin_session_max_age_seconds: int = 12 * 60 * 60
+    admin_cookie_secure: bool = False
+
     upload_max_files: int = 2
     upload_max_file_bytes: int = 2 * 1024 * 1024
     upload_max_total_bytes: int = 4 * 1024 * 1024
@@ -30,6 +36,14 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    @property
+    def admin_auth_configured(self) -> bool:
+        return bool(
+            self.admin_username.strip()
+            and self.admin_password
+            and len(self.admin_session_secret) >= 32
+        )
 
     @property
     def allowed_upload_extensions(self) -> set[str]:

@@ -1,5 +1,6 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router'
 import { AppShell } from '../components/layout/AppShell'
+import { AuthGate } from '../features/auth/AuthGate'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { AnalysisDetailPage } from '../features/history/AnalysisDetailPage'
 import { HistoryPage } from '../features/history/HistoryPage'
@@ -7,7 +8,15 @@ import { LotPage } from '../features/lot/LotPage'
 import { SettingsPage } from '../features/settings/SettingsPage'
 import { UploadPage } from '../features/upload/UploadPage'
 
-const rootRoute = createRootRoute({ component: AppShell })
+function RootLayout() {
+  return (
+    <AuthGate>
+      <AppShell />
+    </AuthGate>
+  )
+}
+
+const rootRoute = createRootRoute({ component: RootLayout })
 
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,

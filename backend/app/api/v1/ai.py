@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.db.session import get_session
@@ -28,18 +28,10 @@ def llm_config(
     return LLMConfigResponse(data=LLMSettingsService(session).status())
 
 
-def require_settings_admin(
-    session: Annotated[Session, Depends(get_session)],
-    token: Annotated[str | None, Header(alias="X-LLM-Settings-Token")] = None,
-) -> None:
-    LLMSettingsService(session).authorize(token)
-
-
 @router.put("/settings/llm", response_model=LLMConfigResponse)
 def save_llm_config(
     request: LLMConfigSaveRequest,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[None, Depends(require_settings_admin)],
 ) -> LLMConfigResponse:
     return LLMConfigResponse(data=LLMSettingsService(session).save(request))
 
@@ -48,7 +40,6 @@ def save_llm_config(
 def fetch_llm_models(
     request: LLMCandidateRequest,
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[None, Depends(require_settings_admin)],
 ) -> LLMModelsResponse:
     return LLMModelsResponse(
         data=LLMSettingsService(session).list_models(request.base_url, request.api_key)
@@ -59,7 +50,6 @@ def fetch_llm_models(
 @router.post("/ai/test", response_model=LLMConnectionResponse)
 def test_llm(
     session: Annotated[Session, Depends(get_session)],
-    _admin: Annotated[None, Depends(require_settings_admin)],
     request: LLMTestRequest | None = None,
 ) -> LLMConnectionResponse:
     candidate = request or LLMTestRequest()

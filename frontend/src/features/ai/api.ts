@@ -12,27 +12,31 @@ export function getLLMConfig(): Promise<LLMConfigResponse> {
   return apiRequest<LLMConfigResponse>('/api/v1/settings/llm')
 }
 
-function settingsHeaders(adminToken: string): HeadersInit {
-  return { 'Content-Type': 'application/json', 'X-LLM-Settings-Token': adminToken }
+function jsonHeaders(): HeadersInit {
+  return { 'Content-Type': 'application/json' }
 }
 
-export function fetchLLMModels(candidate: LLMCandidate, adminToken: string): Promise<LLMModelListResponse> {
+export function fetchLLMModels(candidate: LLMCandidate): Promise<LLMModelListResponse> {
   return apiRequest<LLMModelListResponse>('/api/v1/settings/llm/models', {
-    method: 'POST', headers: settingsHeaders(adminToken), body: JSON.stringify(candidate),
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify(candidate),
   })
 }
 
-export function saveLLMConfig(candidate: LLMSelectedCandidate, adminToken: string): Promise<LLMConfigResponse> {
+export function saveLLMConfig(candidate: LLMSelectedCandidate): Promise<LLMConfigResponse> {
   return apiRequest<LLMConfigResponse>('/api/v1/settings/llm', {
-    method: 'PUT', headers: settingsHeaders(adminToken),
+    method: 'PUT',
+    headers: jsonHeaders(),
     body: JSON.stringify({ provider_type: 'openai_compatible', ...candidate }),
   })
 }
 
-export function testLLMConnection(candidate: LLMSelectedCandidate, adminToken: string): Promise<LLMConnectionResponse> {
+export function testLLMConnection(candidate: LLMSelectedCandidate): Promise<LLMConnectionResponse> {
   return apiRequest<LLMConnectionResponse>('/api/v1/settings/llm/test', {
     method: 'POST',
-    headers: settingsHeaders(adminToken), body: JSON.stringify(candidate),
+    headers: jsonHeaders(),
+    body: JSON.stringify(candidate),
   })
 }
 

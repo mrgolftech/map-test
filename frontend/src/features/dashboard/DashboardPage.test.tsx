@@ -1,7 +1,12 @@
+import type { ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { AppProviders } from '../../app/providers'
 import { DashboardPage } from './DashboardPage'
+
+vi.mock('@tanstack/react-router', () => ({
+  Link: ({ children }: { children: ReactNode }) => <>{children}</>,
+}))
 
 vi.mock('./api', () => ({
   getDashboardSummary: vi.fn().mockResolvedValue({
@@ -26,10 +31,10 @@ describe('DashboardPage', () => {
     )
 
     expect(
-      screen.getByRole('heading', { name: '总览' }),
+      await screen.findByRole('heading', { name: '晶圆分析中心' }),
     ).toBeInTheDocument()
-    expect(await screen.findByText('95.00%')).toBeInTheDocument()
+    expect(screen.getByText('95.00%')).toBeInTheDocument()
     expect(screen.getByText('90.00% – 98.00%')).toBeInTheDocument()
-    expect(screen.getByText('分析历史已就绪')).toBeInTheDocument()
+    expect(screen.getByText('已就绪')).toBeInTheDocument()
   })
 })

@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.middleware.sessions import SessionMiddleware
 from starlette.staticfiles import StaticFiles
 
 from app.api.v1.router import api_router
@@ -23,6 +24,15 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
+    )
+    session_secret = settings.admin_session_secret or str(uuid4())
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=session_secret,
+        session_cookie="wafer_admin_session",
+        max_age=settings.admin_session_max_age_seconds,
+        same_site="lax",
+        https_only=settings.admin_cookie_secure,
     )
 
     @app.middleware("http")

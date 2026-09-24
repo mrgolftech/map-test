@@ -156,7 +156,7 @@ Wafer Map 交互性能不能依赖 DOM 为每颗 Die 创建节点。
 
 ## 7. 测试数据
 
-演示样本、Synthetic Fixture、作品验收数据和生产参考 Synthetic Dataset 的详细基线统一遵循 `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`。其中三套主演示固定为：`MIXED_FAILURES`（典型多失效晶圆）、`LONG_TAIL_MULTI_BIN`（生产规模多 Bin 晶圆）、`EDGE_DRIFT`（批次良率异常追踪）。单 Pattern 场景主要作为算法 Golden Set，不作为最终作品的唯一演示方式。
+演示样本、Synthetic Fixture、作品验收数据和生产参考 Synthetic Dataset 的详细基线统一遵循 `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`。其中三套主演示固定为：`PRODUCTION_PROFILE_COMPACT`（典型多失效晶圆）、`PRODUCTION_PROFILE_SCALE`（生产规模多 Bin 晶圆）、`PROFILE_DRIFT`（批次良率异常追踪）。`MIXED_FAILURES`、`LONG_TAIL_MULTI_BIN`、`EDGE_DRIFT` 等保留为算法/通用回归，不作为最终作品唯一主演示。
 
 真实生产文件：
 

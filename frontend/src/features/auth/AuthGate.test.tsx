@@ -39,7 +39,7 @@ describe('AuthGate', () => {
     fireEvent.change(screen.getByLabelText('密码'), {
       target: { value: 'secret-password' },
     })
-    fireEvent.click(screen.getByRole('button', { name: '登录' }))
+    fireEvent.click(screen.getByRole('button', { name: /登\s*录/ }))
 
     await waitFor(() => expect(loginAdmin).toHaveBeenCalledWith({
       username: 'admin',
@@ -55,6 +55,6 @@ describe('AuthGate', () => {
     })
     renderGate()
     expect(await screen.findByText('管理员登录尚未配置')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '登录' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /登\s*录/ })).toBeDisabled()
   })
 })

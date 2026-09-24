@@ -1,0 +1,94 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "production_referenced": true,
+  "source_policy": "aggregate-characteristics-only",
+  "seed": 20260924,
+  "scenarios": {
+    "PRODUCTION_PROFILE_COMPACT": {
+      "user_label": "典型多失效晶圆（生产参考）",
+      "rows": 24,
+      "columns": 32,
+      "tested": 512,
+      "pass": 190,
+      "fail": 322,
+      "yield": 0.37109375,
+      "cluster_fraction": 0.06,
+      "pat": "production_profile_compact/PROFILE_COMPACT.01.PAT",
+      "cp1": "production_profile_compact/PROFILE_COMPACT.CP1",
+      "bin_counts": {
+        "1": 190,
+        "18": 187,
+        "20": 55,
+        "16": 27,
+        "22": 18,
+        "27": 16,
+        "28": 8,
+        "32": 7,
+        "36": 4
+      },
+      "expected_patterns": {
+        "18": "LOCALIZED_CLUSTER",
+        "32": "CENTER",
+        "36": "RING"
+      }
+    },
+    "PRODUCTION_PROFILE_SCALE": {
+      "user_label": "生产规模多 Bin 晶圆",
+      "rows": 88,
+      "columns": 128,
+      "tested": 8844,
+      "pass": 3284,
+      "fail": 5560,
+      "yield": 0.3713251922207146,
+      "cluster_fraction": 0.27,
+      "pat": "production_profile_scale/PROFILE_SCALE.01.PAT",
+      "cp1": "production_profile_scale/PROFILE_SCALE.CP1",
+      "bin_counts": {
+        "1": 3284,
+        "18": 3180,
+        "20": 950,
+        "16": 450,
+        "22": 300,
+        "27": 270,
+        "28": 130,
+        "30": 80,
+        "32": 50,
+        "35": 40,
+        "19": 30,
+        "36": 25,
+        "21": 20,
+        "33": 15,
+        "23": 10,
+        "26": 5,
+        "12": 5
+      },
+      "expected_patterns": {
+        "18": "LOCALIZED_CLUSTER",
+        "32": "CENTER",
+        "36": "RING"
+      }
+    },
+    "PROFILE_DRIFT": {
+      "user_label": "批次良率异常追踪",
+      "rows": 88,
+      "columns": 128,
+      "wafer_count": 5,
+      "lot_id": "SYNTH-PROFILE-DRIFT",
+      "wafers": [
+        {"wafer_id": "01", "fail": 4900, "pass": 3944, "tested": 8844, "yield": 0.4459520578923564, "cluster_fraction": 0.18},
+        {"wafer_id": "02", "fail": 5100, "pass": 3744, "tested": 8844, "yield": 0.4233378561736771, "cluster_fraction": 0.20},
+        {"wafer_id": "03", "fail": 5300, "pass": 3544, "tested": 8844, "yield": 0.40072365445499775, "cluster_fraction": 0.22},
+        {"wafer_id": "04", "fail": 5560, "pass": 3284, "tested": 8844, "yield": 0.3713251922207146, "cluster_fraction": 0.27},
+        {"wafer_id": "05", "fail": 6600, "pass": 2244, "tested": 8844, "yield": 0.2537313432835821, "cluster_fraction": 0.35}
+      ],
+      "expected": {
+        "compatible": true,
+        "yield_monotonic_decrease": true,
+        "outlier_wafer_id": "05",
+        "main_fail_bin": 18,
+        "cluster_ratio_increases": true
+      }
+    }
+  }
+}

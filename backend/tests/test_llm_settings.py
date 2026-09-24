@@ -1,10 +1,12 @@
+import json
+
 import app.services.ai_analysis_service as ai_service_module
 import app.services.llm_settings_service as settings_module
 import httpx
 from app.core.config import get_settings
 from app.db.session import get_session
 from app.services.llm_settings_service import LLMSettingsService
-from tests.test_ai_api import FakeProvider, persist
+from app.simulator.patterns import generate_pattern_dataset
 
 TOKEN = "settings-admin-token-with-enough-length"
 HEADER = {"X-LLM-Settings-Token": TOKEN}
@@ -47,9 +49,33 @@ def test_settings_require_admin_and_encrypt_persisted_key(client, monkeypatch):
     finally:
         session.close()
 
-    analysis_id = persist(client)
-    fake = FakeProvider()
-    monkeypatch.setattr(ai_service_module, "create_provider", lambda settings: fake)
+    dataset = generate_pattern_dataset("EDGE", fail_count=48)
+    saved_analysis = client.post(
+        "/api/v1/analyses",
+        json={
+            "dataset": dataset.model_dump(mode="json", by_alias=True),
+            "sources": [],
+            "validation_issues": [],
+        },
+    )
+    assert saved_analysis.status_code == 200
+    analysis_id = saved_analysis.json()["data"]["id"]
+
+    class FakeProvider:
+        def complete(self, **_kwargs):
+            return json.dumps(
+                {
+                    "executive_summary": "Deterministic summary reviewed.",
+                    "key_findings": [],
+                    "spatial_patterns": [],
+                    "possible_causes": [],
+                    "recommended_checks": [],
+                    "confidence": 0.5,
+                    "limitations": [],
+                }
+            )
+
+    monkeypatch.setattr(ai_service_module, "create_provider", lambda _settings: FakeProvider())
     analyzed = client.post(f"/api/v1/analyses/{analysis_id}/ai")
     assert analyzed.status_code == 200, analyzed.text
     assert analyzed.json()["data"]["model"] == "selected-model"
@@ -99,8 +125,10 @@ def test_models_invalid_response_and_upstream_error(client, monkeypatch):
         (httpx.Response(401), "LLM_UPSTREAM_ERROR"),
     ]:
         transport = httpx.MockTransport(lambda _request, value=upstream: value)
+
         def make_client(*, chosen_transport):
             return lambda **kwargs: original_client(**{**kwargs, "transport": chosen_transport})
+
         monkeypatch.setattr(
             settings_module.httpx,
             "Client",
@@ -124,3 +152,15 @@ def test_invalid_api_url_rejected(client, monkeypatch):
         )
         assert response.status_code == 422
         assert response.json()["error"]["code"] == "LLM_URL_INVALID"
+
+
+def test_invalid_key_validation_does_not_echo_key(client, monkeypatch):
+    enable_admin(monkeypatch)
+    invalid_key = "sensitive-" + "x" * 4096
+    response = client.put(
+        "/api/v1/settings/llm",
+        json={**CONFIG, "api_key": invalid_key},
+        headers=HEADER,
+    )
+    assert response.status_code == 422
+    assert invalid_key not in response.text

@@ -258,3 +258,41 @@ def test_yield_extrema_preserve_ties(client):
     data = response.json()["data"]
     assert {item["wafer_id"] for item in data["highest_yield_wafers"]} == {"01", "02"}
     assert [item["wafer_id"] for item in data["lowest_yield_wafers"]] == ["03"]
+
+
+def test_profile_drift_lot_flags_final_wafer_and_exposes_cluster_trend(client):
+    generated = client.post(
+        "/api/v1/simulator/lot",
+        json={"scenario": "PROFILE_DRIFT", "seed": 20260924},
+    )
+    assert generated.status_code == 200
+
+    ids = []
+    for dataset in generated.json()["data"]["datasets"]:
+        created = client.post(
+            "/api/v1/analyses",
+            json={
+                "dataset": dataset,
+                "sources": [],
+                "validation_issues": [],
+            },
+        )
+        assert created.status_code == 200
+        ids.append(created.json()["data"]["id"])
+
+    response = client.post(
+        "/api/v1/analyses/compare",
+        json={"analysis_ids": ids},
+    )
+    assert response.status_code == 200
+
+    data = response.json()["data"]
+    assert data["compatibility"]["compatible"] is True
+    outliers = [item for item in data["yield_trend"] if item["is_outlier"]]
+    assert [item["wafer_id"] for item in outliers] == ["05"]
+
+    rows = sorted(data["wafers"], key=lambda item: item["wafer_id"])
+    cluster_ratios = [item["cluster_ratio"] for item in rows]
+    assert all(value is not None for value in cluster_ratios)
+    assert cluster_ratios[-1] > cluster_ratios[0]
+    assert rows[-1]["main_fail_bin"] == 18

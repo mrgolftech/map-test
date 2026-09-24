@@ -389,9 +389,16 @@ Bin 是测试分类，Pattern 是空间特征，同一晶圆可以有多个 Bin 
 
 优先发送压缩后的 AnalysisSummary。
 
+生产规模多 Bin 场景中，Pattern 输入优先按对应 Bin 数量与确定性证据选取，
+确保主 Fail Bin 的 Cluster 等结论不会被小样本高分 Pattern 挤出截取窗口。
+可保留少量主要 RANDOM Bin 作为对照；小样本 Pattern 必须伴随 Bin 数量与局限性。
+当前 OpenAI-compatible 默认输出上限为 8192 tokens，以容纳模型内部推理与完整 JSON。
+若上游返回 `finish_reason=length`，按截断响应报错，不把残缺 JSON 作为正常诊断。
+
 ## 16. LLM 输出校验
 
 模型返回必须经过 Pydantic schema 校验。
+AIReport 的所有顶层字段都必须存在；数组允许为空但不能缺失。
 
 解析失败：
 

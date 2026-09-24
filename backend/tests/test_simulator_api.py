@@ -82,3 +82,124 @@ def test_generate_multi_pattern_wafer(client):
     assert counts[18] == 32
     assert counts[20] == 32
     assert response.json()["meta"]["pattern"] == "MULTI_PATTERN"
+
+
+def test_generate_mixed_failure_wafer_and_reject_too_few_failures(client):
+    response = client.post(
+        "/api/v1/simulator/wafer",
+        json={"pattern": "MIXED_FAILURES", "fail_count": 300},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["meta"]["synthetic"] is True
+    assert payload["data"]["summary"]["fail_die"] == 300
+    assert len([item for item in payload["data"]["bins"] if item["bin"] != 1]) == 6
+
+    invalid = client.post(
+        "/api/v1/simulator/wafer",
+        json={"pattern": "MIXED_FAILURES", "fail_count": 5},
+    )
+    assert invalid.status_code == 422
+
+
+def test_generate_long_tail_multibin_wafer(client):
+    response = client.post(
+        "/api/v1/simulator/wafer",
+        json={
+            "pattern": "LONG_TAIL_MULTI_BIN",
+            "rows": 88,
+            "columns": 128,
+            "fail_count": 5560,
+        },
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["meta"]["synthetic"] is True
+    assert len(payload["data"]["bins"]) == 17
+    assert payload["data"]["summary"]["tested_die"] == 8844
+
+
+def test_generate_production_profile_compact_wafer(client):
+    response = client.post(
+        "/api/v1/simulator/wafer",
+        json={
+            "pattern": "PRODUCTION_PROFILE_COMPACT",
+            "fail_count": 322,
+            "seed": 20260924,
+            "rows": 24,
+            "columns": 32,
+            "product_id": "DEMO_RF_PROFILE",
+            "lot_id": "SYNTH-PROFILE-COMPACT",
+            "wafer_id": "01",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    counts = {item["bin"]: item["count"] for item in data["bins"]}
+    assert data["summary"] == {
+        "tested_die": 512,
+        "pass_die": 190,
+        "fail_die": 322,
+        "yield": 190 / 512,
+    }
+    assert counts == {
+        1: 190,
+        18: 187,
+        20: 55,
+        16: 27,
+        22: 18,
+        27: 16,
+        28: 8,
+        32: 7,
+        36: 4,
+    }
+    assert response.json()["meta"]["pattern"] == "PRODUCTION_PROFILE_COMPACT"
+
+
+def test_generate_production_profile_scale_wafer(client):
+    response = client.post(
+        "/api/v1/simulator/wafer",
+        json={
+            "pattern": "PRODUCTION_PROFILE_SCALE",
+            "fail_count": 5560,
+            "seed": 20260924,
+            "rows": 88,
+            "columns": 128,
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()["data"]
+    counts = {item["bin"]: item["count"] for item in data["bins"]}
+    assert data["summary"]["tested_die"] == 8844
+    assert data["summary"]["pass_die"] == 3284
+    assert data["summary"]["fail_die"] == 5560
+    assert len(counts) == 17
+    assert counts[18] == 3180
+    assert counts[20] == 950
+    assert counts[16] == 450
+    assert counts[36] == 25
+
+
+def test_demo_profile_drift_lot_tracks_yield_and_cluster_degradation(client):
+    response = client.post(
+        "/api/v1/simulator/lot",
+        json={"scenario": "PROFILE_DRIFT", "seed": 20260924},
+    )
+
+    assert response.status_code == 200
+    payload = response.json()["data"]
+    assert payload["scenario"] == "PROFILE_DRIFT"
+    assert len(payload["datasets"]) == 5
+    assert [item["summary"]["fail_die"] for item in payload["datasets"]] == [
+        4900,
+        5100,
+        5300,
+        5560,
+        6600,
+    ]
+    assert all(item["metadata"]["rows"] == 88 for item in payload["datasets"])
+    assert all(item["metadata"]["columns"] == 128 for item in payload["datasets"])
+    yields = [item["summary"]["yield"] for item in payload["datasets"]]
+    assert yields == sorted(yields, reverse=True)

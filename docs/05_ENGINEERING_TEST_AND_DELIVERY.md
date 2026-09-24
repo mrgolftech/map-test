@@ -156,6 +156,8 @@ Wafer Map 交互性能不能依赖 DOM 为每颗 Die 创建节点。
 
 ## 7. 测试数据
 
+演示样本、Synthetic Fixture、作品验收数据和生产参考 Synthetic Dataset 的详细基线统一遵循 `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`。其中三套主演示固定为：`PRODUCTION_PROFILE_COMPACT`（典型多失效晶圆）、`PRODUCTION_PROFILE_SCALE`（生产规模多 Bin 晶圆）、`PROFILE_DRIFT`（批次良率异常追踪）。`MIXED_FAILURES`、`LONG_TAIL_MULTI_BIN`、`EDGE_DRIFT` 等保留为算法/通用回归，不作为最终作品唯一主演示。
+
 真实生产文件：
 
 - 不进入公开仓库；
@@ -193,6 +195,8 @@ Simulator config
 ```
 
 既有 PAT/CP 样例只用于确认格式结构；正式回归使用重新生成的 synthetic fixture，不提交原始样例文件。
+
+主演示 Fixture 必须执行 Simulator → Serializer → real Parser → Canonical Validator → AnalysisEngine 的 round-trip 回归，并校验 exact facts、Bin count 守恒及关键 Pattern evidence。
 
 ## 8. CI
 

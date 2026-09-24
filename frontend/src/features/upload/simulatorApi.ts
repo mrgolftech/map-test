@@ -14,11 +14,16 @@ export type SyntheticPattern =
   | 'CLUSTER'
   | 'LINE'
   | 'MULTI_PATTERN'
+  | 'MIXED_FAILURES'
+  | 'LONG_TAIL_MULTI_BIN'
+  | 'PRODUCTION_PROFILE_COMPACT'
+  | 'PRODUCTION_PROFILE_SCALE'
 
 export type DemoLotScenario =
   | 'EDGE_DRIFT'
   | 'MIXED_PATTERNS'
   | 'STABLE_RANDOM'
+  | 'PROFILE_DRIFT'
 
 export type SyntheticWaferInput = {
   pattern: SyntheticPattern

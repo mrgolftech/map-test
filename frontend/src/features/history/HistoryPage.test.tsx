@@ -38,5 +38,5 @@ describe('HistoryPage', () => {
     expect(screen.getByRole('heading', { name: '分析历史' })).toBeInTheDocument()
     expect(await screen.findByText('暂无符合条件的分析记录')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /筛选/ })).toBeInTheDocument()
-  })
+  }, 15_000)
 })

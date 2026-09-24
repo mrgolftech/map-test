@@ -449,6 +449,27 @@ class AnalysisEngine:
                     ),
                 )
             )
+            if len(fail_bins) > 1:
+                other = fail_bins[1:4]
+                findings.append(
+                    AnalysisFinding(
+                        kind="FACT",
+                        text=(
+                            f"Other fail bins ({len(fail_bins)} total): "
+                            + "; ".join(
+                                f"Bin {item.soft_bin} ({item.description or 'N/A'}), "
+                                f"count={item.count}, fail_share={(item.fail_share or 0.0):.4f}"
+                                for item in other
+                            )
+                            + (
+                                f"; plus {len(fail_bins) - 1 - len(other)} more"
+                                if len(fail_bins) > 1 + len(other)
+                                else ""
+                            )
+                            + "."
+                        ),
+                    )
+                )
         if patterns:
             top = patterns[0]
             findings.append(
@@ -460,6 +481,22 @@ class AnalysisEngine:
                     ),
                 )
             )
+            seen_bins = {top.soft_bin}
+            for item in patterns[1:]:
+                if item.soft_bin in seen_bins:
+                    continue
+                findings.append(
+                    AnalysisFinding(
+                        kind="JUDGMENT",
+                        text=(
+                            f"Additional deterministic pattern is {item.pattern} "
+                            f"for Bin {item.soft_bin} with score={item.score:.3f}."
+                        ),
+                    )
+                )
+                seen_bins.add(item.soft_bin)
+                if len(seen_bins) == 3:
+                    break
 
         limitations = [
             (

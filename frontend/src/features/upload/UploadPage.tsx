@@ -78,10 +78,27 @@ export function UploadPage() {
 
   const demoMutation = useMutation({
     mutationFn: async (pattern: SyntheticPattern) => {
+      const isScaleProfile =
+        pattern === 'LONG_TAIL_MULTI_BIN' || pattern === 'PRODUCTION_PROFILE_SCALE'
       const generated = await generateDemoWafer({
         pattern,
-        fail_count: pattern === 'RANDOM' ? 36 : 48,
-        product_id: 'DEMO_WAFER_PRODUCT',
+        fail_count:
+          pattern === 'PRODUCTION_PROFILE_SCALE'
+            ? 5560
+            : pattern === 'PRODUCTION_PROFILE_COMPACT'
+              ? 322
+              : pattern === 'LONG_TAIL_MULTI_BIN'
+                ? 5560
+                : pattern === 'MIXED_FAILURES'
+                  ? 300
+                  : pattern === 'RANDOM'
+                    ? 36
+                    : 48,
+        rows: isScaleProfile ? 88 : 24,
+        columns: isScaleProfile ? 128 : 32,
+        product_id: pattern.startsWith('PRODUCTION_PROFILE_')
+          ? 'DEMO_RF_PROFILE'
+          : 'DEMO_WAFER_PRODUCT',
         lot_id: `DEMO-${pattern}`,
         wafer_id: '01',
       })
@@ -102,14 +119,19 @@ export function UploadPage() {
   const demoLotMutation = useMutation({
     mutationFn: async (scenario: DemoLotScenario) => {
       const generated = await generateDemoLot(scenario)
-      for (const dataset of generated.data.datasets) {
+      const lotId = `${generated.data.datasets[0]?.metadata.lot_id ?? `DEMO-${scenario}`}-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
+      const datasets = generated.data.datasets.map((dataset) => ({
+        ...dataset,
+        metadata: { ...dataset.metadata, lot_id: lotId },
+      }))
+      for (const dataset of datasets) {
         await createAnalysis({
           dataset,
           sources: [],
           validation_issues: [],
         })
       }
-      return generated
+      return { ...generated, data: { ...generated.data, datasets } }
     },
     onSuccess: (response) => {
       const first = response.data.datasets[0]
@@ -233,7 +255,72 @@ export function UploadPage() {
       >
         <Space direction="vertical" size={12} className="demo-generator">
           <Typography.Text>
-            单片场景用于验证空间 Pattern；演示 Lot 用于验证 Yield 趋势、IQR 异常、Wafer Matrix 与 Mini Map。
+            一张晶圆可同时有多种 Fail Bin，每个 Bin 可能呈现不同空间分布。生产参考场景只保留真实样例的聚合特征，所有坐标、数量、标识和时间均重新生成。
+          </Typography.Text>
+          <Space wrap>
+            <Button
+              type="primary"
+              icon={<FlaskConical size={16} />}
+              disabled={demoLotMutation.isPending}
+              loading={
+                demoMutation.isPending
+                && demoMutation.variables === 'PRODUCTION_PROFILE_COMPACT'
+              }
+              onClick={() => demoMutation.mutate('PRODUCTION_PROFILE_COMPACT')}
+            >
+              典型多失效晶圆（生产参考）
+            </Button>
+            <Button
+              icon={<FlaskConical size={16} />}
+              disabled={demoLotMutation.isPending}
+              loading={
+                demoMutation.isPending
+                && demoMutation.variables === 'PRODUCTION_PROFILE_SCALE'
+              }
+              onClick={() => demoMutation.mutate('PRODUCTION_PROFILE_SCALE')}
+            >
+              生产规模多 Bin 晶圆
+            </Button>
+            <Button
+              icon={<Layers3 size={16} />}
+              disabled={demoMutation.isPending}
+              loading={
+                demoLotMutation.isPending
+                && demoLotMutation.variables === 'PROFILE_DRIFT'
+              }
+              onClick={() => demoLotMutation.mutate('PROFILE_DRIFT')}
+            >
+              批次良率异常追踪
+            </Button>
+          </Space>
+          <Typography.Text type="secondary">
+            基于生产样例观察到的大尺寸、头部长尾、多 Bin 共存与主 Bin 聚集特征构造；不复用生产坐标、精确 Bin 计数或生产标识。
+          </Typography.Text>
+          <Typography.Text>
+            以下场景用于算法 Golden / 视觉回归，可验证指定 Pattern 或人为组合 Pattern。
+          </Typography.Text>
+          <Button
+            type="primary"
+            icon={<FlaskConical size={16} />}
+            disabled={demoLotMutation.isPending}
+            loading={demoMutation.isPending && demoMutation.variables === 'MIXED_FAILURES'}
+            onClick={() => demoMutation.mutate('MIXED_FAILURES')}
+          >
+            生成单片多失效演示（6 个 Fail Bin）
+          </Button>
+          <Typography.Text type="secondary">
+            合成示例：边缘、中心、局部聚集、环形和离散失效共存；数据与生产样例无对应关系。
+          </Typography.Text>
+          <Button
+            icon={<FlaskConical size={16} />}
+            disabled={demoLotMutation.isPending}
+            loading={demoMutation.isPending && demoMutation.variables === 'LONG_TAIL_MULTI_BIN'}
+            onClick={() => demoMutation.mutate('LONG_TAIL_MULTI_BIN')}
+          >
+            生成生产规模多 Bin 测试集（16 个 Fail Bin）
+          </Button>
+          <Typography.Text type="secondary">
+            88 × 128 网格，主要失效 Bin 与长尾 Bin 共存；全部位置和数量由固定种子重新生成。
           </Typography.Text>
           <Space wrap>
             {demoPatterns.map((pattern) => (

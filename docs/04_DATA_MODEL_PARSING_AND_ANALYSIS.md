@@ -371,6 +371,12 @@ Simulator 不能直接写测试期望结果。
 
 固定 fixture 必须有 seed 与 expected facts。
 
+单片多失效合成场景必须保留每个 Fail Bin 的 Die 数、占比和独立空间统计；
+Bin 是测试分类，Pattern 是空间特征，同一晶圆可以有多个 Bin 和多个 Pattern。
+演示数据只借鉴多 Bin 共存这一业务语义，不拷贝生产晶圆的坐标、计数或标识。
+生产规模合成 fixture 可借鉴网格尺寸、失效类别数量与头部长尾特征，
+但所有 Die 坐标、Bin 计数、标识、描述必须独立生成；回归测试用 PAT/CP 走实际 Parser。
+
 ## 15. LLM 输入边界
 
 禁止默认发送：

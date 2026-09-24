@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "synthetic": true,
+  "production_referenced": true,
+  "source_policy": "aggregate-characteristics-only",
+  "seed": 20260924,
+  "scenarios": {
+    "PRODUCTION_PROFILE_COMPACT": {
+      "user_label": "典型多失效晶圆（生产参考）",
+      "rows": 24,
+      "columns": 32,
+      "tested": 512,
+      "pass": 190,
+      "fail": 322,
+      "yield": 0.37109375,
+      "cluster_fraction": 0.06,
+      "pat": "production_profile_compact/PROFILE_COMPACT.01.PAT",
+      "cp1": "production_profile_compact/PROFILE_COMPACT.CP1",
+      "bin_counts": {
+        "1": 190,
+        "18": 187,
+        "20": 55,
+        "16": 27,
+        "22": 18,
+        "27": 16,
+        "28": 8,
+        "32": 7,
+        "36": 4
+      },
+      "expected_patterns": {
+        "18": "LOCALIZED_CLUSTER",
+        "32": "CENTER",
+        "36": "RING"
+      }
+    },
+    "PRODUCTION_PROFILE_SCALE": {
+      "user_label": "生产规模多 Bin 晶圆",
+      "rows": 88,
+      "columns": 128,
+      "tested": 8844,
+      "pass": 3284,
+      "fail": 5560,
+      "yield": 0.3713251922207146,
+      "cluster_fraction": 0.27,
+      "pat": "production_profile_scale/PROFILE_SCALE.01.PAT",
+      "cp1": "production_profile_scale/PROFILE_SCALE.CP1",
+      "bin_counts": {
+        "1": 3284,
+        "18": 3180,
+        "20": 950,
+        "16": 450,
+        "22": 300,
+        "27": 270,
+        "28": 130,
+        "30": 80,
+        "32": 50,
+        "35": 40,
+        "19": 30,
+        "36": 25,
+        "21": 20,
+        "33": 15,
+        "23": 10,
+        "26": 5,
+        "12": 5
+      },
+      "expected_patterns": {
+        "18": "LOCALIZED_CLUSTER",
+        "32": "CENTER",
+        "36": "RING"
+      }
+    },
+    "PROFILE_DRIFT": {
+      "user_label": "批次良率异常追踪",
+      "rows": 88,
+      "columns": 128,
+      "wafer_count": 5,
+      "lot_id": "SYNTH-PROFILE-DRIFT",
+      "wafers": [
+        {
+          "wafer_id": "01",
+          "tested": 8844,
+          "pass": 3944,
+          "fail": 4900,
+          "yield": 0.4459520578923564,
+          "cluster_fraction": 0.18,
+          "bin_counts": {
+            "1": 3944, "18": 2803, "20": 837, "16": 397, "22": 264,
+            "27": 238, "28": 115, "30": 71, "32": 44, "35": 35,
+            "19": 26, "36": 22, "21": 18, "33": 13, "23": 9, "26": 4, "12": 4
+          }
+        },
+        {
+          "wafer_id": "02",
+          "tested": 8844,
+          "pass": 3744,
+          "fail": 5100,
+          "yield": 0.4233378561736771,
+          "cluster_fraction": 0.20,
+          "bin_counts": {
+            "1": 3744, "18": 2917, "20": 871, "16": 413, "22": 275,
+            "27": 248, "28": 119, "30": 73, "32": 46, "35": 37,
+            "19": 27, "36": 23, "21": 18, "33": 14, "23": 9, "26": 5, "12": 5
+          }
+        },
+        {
+          "wafer_id": "03",
+          "tested": 8844,
+          "pass": 3544,
+          "fail": 5300,
+          "yield": 0.40072365445499775,
+          "cluster_fraction": 0.22,
+          "bin_counts": {
+            "1": 3544, "18": 3031, "20": 906, "16": 429, "22": 286,
+            "27": 257, "28": 124, "30": 76, "32": 48, "35": 38,
+            "19": 29, "36": 24, "21": 19, "33": 14, "23": 9, "26": 5, "12": 5
+          }
+        },
+        {
+          "wafer_id": "04",
+          "tested": 8844,
+          "pass": 3284,
+          "fail": 5560,
+          "yield": 0.3713251922207146,
+          "cluster_fraction": 0.27,
+          "bin_counts": {
+            "1": 3284, "18": 3180, "20": 950, "16": 450, "22": 300,
+            "27": 270, "28": 130, "30": 80, "32": 50, "35": 40,
+            "19": 30, "36": 25, "21": 20, "33": 15, "23": 10, "26": 5, "12": 5
+          }
+        },
+        {
+          "wafer_id": "05",
+          "tested": 8844,
+          "pass": 2244,
+          "fail": 6600,
+          "yield": 0.2537313432835821,
+          "cluster_fraction": 0.35,
+          "bin_counts": {
+            "1": 2244, "18": 3775, "20": 1128, "16": 534, "22": 356,
+            "27": 320, "28": 154, "30": 95, "32": 59, "35": 47,
+            "19": 36, "36": 30, "21": 24, "33": 18, "23": 12, "26": 6, "12": 6
+          }
+        }
+      ],
+      "expected": {
+        "compatible": true,
+        "yield_monotonic_decrease": true,
+        "outlier_wafer_id": "05",
+        "main_fail_bin": 18,
+        "cluster_ratio_increases": true
+      }
+    }
+  }
+}

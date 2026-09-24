@@ -109,3 +109,103 @@ def test_multi_pattern_fixture_exposes_two_independent_fail_bins():
     }
     assert "EDGE" in _patterns_for(summary, 18)
     assert "CENTER" in _patterns_for(summary, 20)
+
+
+def test_mixed_failures_single_wafer_has_separate_bin_distributions_and_findings():
+    dataset = generate_pattern_dataset("MIXED_FAILURES", fail_count=300)
+    summary = AnalysisEngine().analyze(dataset)
+
+    assert [(item.bin, item.count) for item in dataset.bins] == [
+        (1, 212), (18, 165), (20, 60), (16, 36),
+        (22, 21), (27, 12), (28, 6),
+    ]
+    assert len({(die.row, die.column) for die in dataset.dies}) == 512
+    assert "EDGE" in _patterns_for(summary, 18)
+    assert "CENTER" in _patterns_for(summary, 20)
+    assert "LOCALIZED_CLUSTER" in _patterns_for(summary, 16)
+    assert "RING" in _patterns_for(summary, 22)
+    assert all(item.count > 0 for item in summary.spatial_by_bin)
+    assert any("Other fail bins (6 total)" in item.text for item in summary.top_findings)
+    assert len({
+        item.text.split("for Bin ")[1].split()[0]
+        for item in summary.top_findings
+        if item.kind == "JUDGMENT" and "for Bin " in item.text
+    }) == 3
+
+
+def test_long_tail_multibin_has_dominant_cluster_and_distributed_other_bins():
+    dataset = generate_pattern_dataset(
+        "LONG_TAIL_MULTI_BIN", rows=88, columns=128, fail_count=5560
+    )
+    summary = AnalysisEngine().analyze(dataset)
+
+    assert dataset.summary.tested_die == 8844
+    assert dataset.summary.pass_die == 3284
+    assert len(dataset.bins) == 17
+    assert dataset.bins[1].count == 2700
+    assert all(item.count > 0 for item in dataset.bins)
+    assert "LOCALIZED_CLUSTER" in _patterns_for(summary, 18)
+    for bin_id in (20, 16, 22, 27, 28):
+        assert "RANDOM" in _patterns_for(summary, bin_id)
+    assert len({(item.row, item.column) for item in dataset.dies}) == 8844
+
+
+def test_production_profile_compact_preserves_realistic_head_tail_and_patterns():
+    dataset = generate_pattern_dataset(
+        "PRODUCTION_PROFILE_COMPACT",
+        rows=24,
+        columns=32,
+        fail_count=322,
+        seed=20260924,
+    )
+    summary = AnalysisEngine().analyze(dataset)
+
+    counts = {item.bin: item.count for item in dataset.bins}
+    assert counts == {
+        1: 190,
+        18: 187,
+        20: 55,
+        16: 27,
+        22: 18,
+        27: 16,
+        28: 8,
+        32: 7,
+        36: 4,
+    }
+    assert "LOCALIZED_CLUSTER" in _patterns_for(summary, 18)
+    assert "CENTER" in _patterns_for(summary, 32)
+    assert "RING" in _patterns_for(summary, 36)
+    dominant = next(item for item in summary.spatial_by_bin if item.soft_bin == 18)
+    assert dominant.cluster.cluster_ratio is not None
+    assert 0.25 <= dominant.cluster.cluster_ratio <= 0.40
+
+
+def test_production_profile_scale_has_realistic_long_tail_and_dominant_cluster():
+    dataset = generate_pattern_dataset(
+        "PRODUCTION_PROFILE_SCALE",
+        rows=88,
+        columns=128,
+        fail_count=5560,
+        seed=20260924,
+    )
+    summary = AnalysisEngine().analyze(dataset)
+
+    counts = {item.bin: item.count for item in dataset.bins}
+    assert dataset.summary.tested_die == 8844
+    assert dataset.summary.pass_die == 3284
+    assert len(counts) == 17
+    assert [counts[bin_id] for bin_id in (18, 20, 16, 22, 27)] == [
+        3180,
+        950,
+        450,
+        300,
+        270,
+    ]
+    assert "LOCALIZED_CLUSTER" in _patterns_for(summary, 18)
+    assert "CENTER" in _patterns_for(summary, 32)
+    assert "RING" in _patterns_for(summary, 36)
+    for bin_id in (20, 16, 22, 27, 28):
+        assert "RANDOM" in _patterns_for(summary, bin_id)
+    dominant = next(item for item in summary.spatial_by_bin if item.soft_bin == 18)
+    assert dominant.cluster.cluster_ratio is not None
+    assert 0.25 <= dominant.cluster.cluster_ratio <= 0.40

@@ -29,7 +29,7 @@ PAT / CP
 - Lot Yield/Bin/空间趋势、IQR 异常、Wafer Matrix 和 Mini Map；
 - OpenAI-compatible LLM Provider，结构化 FACT/JUDGMENT/HYPOTHESIS/RECOMMENDATION 输出；
 - AI 报告随分析历史持久化，LLM 不可用时仍可恢复已保存报告；
-- 脱敏 Simulator：典型空间 Pattern、MULTI_PATTERN、演示 Lot；
+- 脱敏 Simulator：单 Pattern Golden Set、单片多 Fail Bin、生产规模长尾多 Bin、演示 Lot；
 - 独立 HTML 工程报告，可由浏览器打印/另存为 PDF。
 
 ## 核心原则
@@ -73,6 +73,7 @@ API Key 不会返回前端，也不得写入 Git 或日志。
 - `docs/05_ENGINEERING_TEST_AND_DELIVERY.md`：工程、测试、CI、Docker、敏感数据与 DoD
 - `docs/06_IMPLEMENTATION_ROADMAP.md`：实现顺序与阶段退出条件
 - `docs/07_REFERENCE_PROJECTS_AND_ADOPTED_PRACTICES.md`：上游参考项目与采用边界
+- `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`：演示样本、Synthetic Fixture、作品验收与回归测试基线\n- `backend/tests/fixtures/production_profile_demo/`：三套正式主演示数据的 manifest、生成方法与回归入口
 
 ## 实现优先级
 

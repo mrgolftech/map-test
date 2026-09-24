@@ -139,12 +139,16 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 
 ### Simulator / tests
 
+演示数据与回归 Fixture 的构建、命名、安全边界和三套主演示基线必须遵循 `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`。
+
 - Edge；
 - Center；
 - Ring；
 - Quadrant；
 - Cluster；
 - Line；
+- 单片多 Fail Bin（不同 Bin 分别注入 Edge / Center / Cluster / Ring 等特征）；
+- 生产规模合成单片（16 个 Fail Bin，主 Bin 局部聚集，其余包含离散长尾）；
 - 固定 seed；
 - region/bin count conservation；
 - enrichment formula；
@@ -292,7 +296,7 @@ AI 只能在 Phase 1–4 的确定性事实稳定后进入。
 ## Phase 6 — Report / Polish
 
 - report export；
-- enhanced simulator；
+- enhanced simulator（不得退化为单 Pattern Demo，持续维护 `PRODUCTION_PROFILE_COMPACT` / `PRODUCTION_PROFILE_SCALE` / `PROFILE_DRIFT` 主演示基线；旧 `MIXED_FAILURES` / `LONG_TAIL_MULTI_BIN` / `EDGE_DRIFT` 继续作为算法回归）；
 - more parser fixtures；
 - Visual QA；
 - performance profiling；

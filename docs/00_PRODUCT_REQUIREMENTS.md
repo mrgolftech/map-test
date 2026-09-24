@@ -208,6 +208,8 @@ AI 输出必须结构化：
 - cluster_fail；
 - scratch_line_fail；
 - multi_pattern；
+- mixed_failures：单片晶圆同时含多个 Fail Soft Bin，展示不同 Bin 的空间分布；
+- long_tail_multi_bin：大尺寸单片、主要失效 Bin 与多个长尾 Bin 共存；
 - yield_drift_lot。
 
 模拟器最终必须支持：

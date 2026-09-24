@@ -27,7 +27,70 @@ PatternName = Literal[
     "CLUSTER",
     "LINE",
     "MULTI_PATTERN",
+    "MIXED_FAILURES",
+    "LONG_TAIL_MULTI_BIN",
+    "PRODUCTION_PROFILE_COMPACT",
+    "PRODUCTION_PROFILE_SCALE",
 ]
+
+# A deliberately synthetic single-wafer scenario: distinct test bins can have
+# different spatial signatures on the same wafer. Counts are proportions of
+# fail_count and do not reproduce any production map or bin histogram.
+MIXED_FAILURE_SPECS = (
+    (18, "Pout_min", "EDGE", 55),
+    (20, "Pout_max", "CENTER", 20),
+    (16, "BER_RESULT", "CLUSTER", 12),
+    (22, "Pout_margin", "RING", 7),
+    (27, "GADC", "RANDOM", 4),
+    (28, "ICC_sleep", "RANDOM", 2),
+)
+
+# Aggregate features only: large wafer, one dominant bin, and a long tail.
+# Counts, bin identifiers for the tail, and every coordinate are synthetic.
+LONG_TAIL_SPECS = (
+    (18, "RF_LOW", 2700), (20, "RF_HIGH", 1100),
+    (16, "BIT_ERROR", 560), (22, "RF_MARGIN", 370),
+    (27, "ADC_CHECK", 300), (28, "SLEEP_CURRENT", 160),
+    (30, "CURRENT_CHECK", 90), (32, "IDLE_CHECK", 60),
+    (35, "POWER_CHECK", 45), (19, "GAIN_CHECK", 40),
+    (36, "TIMING_CHECK", 35), (21, "VOLTAGE_CHECK", 30),
+    (33, "CLOCK_CHECK", 25), (24, "TEMP_CHECK", 20),
+    (29, "NOISE_CHECK", 15), (34, "OTHER_CHECK", 10),
+)
+
+# Production-referenced synthetic profiles. Only aggregate characteristics are
+# retained: large geometry, a dominant fail bin, a steep long tail, a dominant
+# localized component, and a few minority center/ring signatures. Coordinates,
+# counts, descriptions, metadata, and timestamps are independently generated.
+PROFILE_COMPACT_SPECS = (
+    (18, "RF_LOW", "CLUSTER_MIX", 187),
+    (20, "RF_HIGH_A", "RANDOM", 55),
+    (16, "BER_CHECK", "RANDOM", 27),
+    (22, "RF_HIGH_B", "RANDOM", 18),
+    (27, "ADC_CHECK", "RANDOM", 16),
+    (28, "SLEEP_CURRENT", "RANDOM", 8),
+    (32, "DEEPSLEEP_CURRENT", "Q2_CENTER", 7),
+    (36, "MEMORY_CHECK", "RING", 4),
+)
+
+PROFILE_SCALE_SPECS = (
+    (18, "RF_LOW", "CLUSTER_MIX", 3180),
+    (20, "RF_HIGH_A", "RANDOM", 950),
+    (16, "BER_CHECK", "RANDOM", 450),
+    (22, "RF_HIGH_B", "RANDOM", 300),
+    (27, "ADC_CHECK", "RANDOM", 270),
+    (28, "SLEEP_CURRENT_LV", "RANDOM", 130),
+    (30, "SLEEP_CURRENT_HV", "RANDOM", 80),
+    (32, "DEEPSLEEP_CURRENT", "Q2_CENTER", 50),
+    (35, "LOGIC_CHECK", "RANDOM", 40),
+    (19, "TX_CURRENT", "RANDOM", 30),
+    (36, "MEMORY_CHECK", "RING", 25),
+    (21, "RF_HIGH_C", "RANDOM", 20),
+    (33, "WAKE_CHECK", "RANDOM", 15),
+    (23, "DEVIATION_CHECK", "RANDOM", 10),
+    (26, "CURRENT_CHECK", "RANDOM", 5),
+    (12, "MODE_CHECK", "RANDOM", 5),
+)
 
 
 def _normalized(
@@ -133,6 +196,116 @@ def _select_fail_coordinates(
     raise ValueError(f"Unsupported synthetic pattern: {pattern}")
 
 
+
+def _allocate_profile_counts(
+    specs: tuple[tuple[int, str, str, int], ...],
+    fail_count: int,
+) -> list[int]:
+    total_weight = sum(weight for _, _, _, weight in specs)
+    raw = [fail_count * weight / total_weight for _, _, _, weight in specs]
+    counts = [max(1, int(value)) for value in raw]
+    difference = fail_count - sum(counts)
+    order = sorted(
+        range(len(raw)),
+        key=lambda index: raw[index] - int(raw[index]),
+        reverse=difference > 0,
+    )
+    offset = 0
+    while difference:
+        index = order[offset % len(order)]
+        if difference > 0:
+            counts[index] += 1
+            difference -= 1
+        elif counts[index] > 1:
+            counts[index] -= 1
+            difference += 1
+        offset += 1
+    return counts
+
+
+def _select_q2_center(
+    coordinates: list[tuple[int, int]],
+    *,
+    fail_count: int,
+) -> set[tuple[int, int]]:
+    geometry = _normalized(coordinates)
+    candidates = [
+        coordinate
+        for coordinate in coordinates
+        if geometry[coordinate][0] < 0 and geometry[coordinate][1] >= 0
+    ]
+    if fail_count > len(candidates):
+        raise ValueError("Q2_CENTER cannot provide the requested fail count.")
+    ranked = sorted(candidates, key=lambda item: geometry[item][2])
+    return set(ranked[:fail_count])
+
+
+def _select_profile_group(
+    mode: str,
+    coordinates: list[tuple[int, int]],
+    *,
+    fail_count: int,
+    seed: int,
+    cluster_fraction: float,
+) -> set[tuple[int, int]]:
+    if mode == "RANDOM":
+        return set(Random(seed).sample(coordinates, fail_count))
+    if mode == "RING":
+        return _select_fail_coordinates(
+            "RING", coordinates, fail_count=fail_count, seed=seed
+        )
+    if mode == "Q2_CENTER":
+        return _select_q2_center(coordinates, fail_count=fail_count)
+    if mode == "CLUSTER_MIX":
+        geometry = _normalized(coordinates)
+        localized_count = max(1, round(fail_count * cluster_fraction))
+        target_x, target_y = -0.45, 0.60
+        localized = set(
+            sorted(
+                coordinates,
+                key=lambda item: hypot(
+                    geometry[item][0] - target_x,
+                    geometry[item][1] - target_y,
+                ),
+            )[:localized_count]
+        )
+        remaining = [item for item in coordinates if item not in localized]
+        distributed = set(
+            Random(seed + 10_000).sample(
+                remaining,
+                fail_count - localized_count,
+            )
+        )
+        return localized | distributed
+    raise ValueError(f"Unsupported production profile mode: {mode}")
+
+
+def _profile_fail_groups(
+    specs: tuple[tuple[int, str, str, int], ...],
+    coordinates: list[tuple[int, int]],
+    *,
+    fail_count: int,
+    seed: int,
+    cluster_fraction: float,
+) -> list[tuple[int, str, set[tuple[int, int]]]]:
+    counts = _allocate_profile_counts(specs, fail_count)
+    remaining = coordinates.copy()
+    groups: list[tuple[int, str, set[tuple[int, int]]]] = []
+    for index, ((soft_bin, description, mode, _), count) in enumerate(
+        zip(specs, counts, strict=True)
+    ):
+        selected = _select_profile_group(
+            mode,
+            remaining,
+            fail_count=count,
+            seed=seed + index,
+            cluster_fraction=cluster_fraction,
+        )
+        groups.append((soft_bin, description, selected))
+        remaining = [item for item in remaining if item not in selected]
+    return groups
+
+
 def generate_pattern_dataset(
     pattern: PatternName,
     *,
@@ -140,6 +313,7 @@ def generate_pattern_dataset(
     fail_count: int = 48,
     rows: int = 24,
     columns: int = 32,
+    profile_cluster_fraction: float | None = None,
 ) -> WaferDataset:
     config = SyntheticWaferConfig(
         product_id=f"DEMO_{pattern}",
@@ -148,6 +322,11 @@ def generate_pattern_dataset(
         seed=seed,
         rows=rows,
         columns=columns,
+        radius_scale=(
+            1.0
+            if pattern in {"LONG_TAIL_MULTI_BIN", "PRODUCTION_PROFILE_SCALE"}
+            else 0.92
+        ),
         bins=[],
     )
     coordinates = active_coordinates(config)
@@ -155,9 +334,22 @@ def generate_pattern_dataset(
         raise ValueError("fail_count must leave both PASS and FAIL dies.")
     if pattern == "MULTI_PATTERN" and fail_count < 2:
         raise ValueError("MULTI_PATTERN requires at least two failing dies.")
+    if pattern == "MIXED_FAILURES" and fail_count < len(MIXED_FAILURE_SPECS):
+        raise ValueError("MIXED_FAILURES requires at least six failing dies.")
+    if pattern == "LONG_TAIL_MULTI_BIN" and fail_count < len(LONG_TAIL_SPECS):
+        raise ValueError("LONG_TAIL_MULTI_BIN requires at least 16 failing dies.")
+    if (
+        pattern == "PRODUCTION_PROFILE_COMPACT"
+        and fail_count < len(PROFILE_COMPACT_SPECS)
+    ):
+        raise ValueError("PRODUCTION_PROFILE_COMPACT requires at least eight failing dies.")
+    if (
+        pattern == "PRODUCTION_PROFILE_SCALE"
+        and fail_count < len(PROFILE_SCALE_SPECS)
+    ):
+        raise ValueError("PRODUCTION_PROFILE_SCALE requires at least 16 failing dies.")
 
-    primary_fail_coordinates: set[tuple[int, int]]
-    secondary_fail_coordinates: set[tuple[int, int]] = set()
+    fail_groups: list[tuple[int, str, set[tuple[int, int]]]] = []
     if pattern == "MULTI_PATTERN":
         primary_count = fail_count // 2
         secondary_count = fail_count - primary_count
@@ -178,46 +370,100 @@ def generate_pattern_dataset(
             fail_count=secondary_count,
             seed=seed + 1,
         )
+        fail_groups = [
+            (18, "Pout_min", primary_fail_coordinates),
+            (20, "Pout_max", secondary_fail_coordinates),
+        ]
+    elif pattern == "MIXED_FAILURES":
+        remaining = coordinates.copy()
+        assigned = 0
+        for index, (soft_bin, description, spatial_pattern, weight) in enumerate(
+            MIXED_FAILURE_SPECS
+        ):
+            count = (
+                fail_count - assigned
+                if index == len(MIXED_FAILURE_SPECS) - 1
+                else max(1, fail_count * weight // 100)
+            )
+            # Leave one die for every later bin when the requested total is small.
+            count = min(count, fail_count - assigned - (len(MIXED_FAILURE_SPECS) - index - 1))
+            selected = _select_fail_coordinates(
+                spatial_pattern,
+                remaining,
+                fail_count=count,
+                seed=seed + index,
+            )
+            fail_groups.append((soft_bin, description, selected))
+            remaining = [item for item in remaining if item not in selected]
+            assigned += count
+    elif pattern == "PRODUCTION_PROFILE_COMPACT":
+        fail_groups = _profile_fail_groups(
+            PROFILE_COMPACT_SPECS,
+            coordinates,
+            fail_count=fail_count,
+            seed=seed,
+            cluster_fraction=profile_cluster_fraction or 0.06,
+        )
+    elif pattern == "PRODUCTION_PROFILE_SCALE":
+        fail_groups = _profile_fail_groups(
+            PROFILE_SCALE_SPECS,
+            coordinates,
+            fail_count=fail_count,
+            seed=seed,
+            cluster_fraction=profile_cluster_fraction or 0.27,
+        )
+    elif pattern == "LONG_TAIL_MULTI_BIN":
+        remaining = coordinates.copy()
+        total_weight = sum(weight for _, _, weight in LONG_TAIL_SPECS)
+        assigned = 0
+        rng = Random(seed)
+        for index, (soft_bin, description, weight) in enumerate(LONG_TAIL_SPECS):
+            count = (
+                fail_count - assigned
+                if index == len(LONG_TAIL_SPECS) - 1
+                else max(1, fail_count * weight // total_weight)
+            )
+            count = min(count, fail_count - assigned - (len(LONG_TAIL_SPECS) - index - 1))
+            if index == 0:
+                localized = _select_fail_coordinates(
+                    "CLUSTER", remaining, fail_count=count * 3 // 5, seed=seed
+                )
+                candidates = [item for item in remaining if item not in localized]
+                selected = localized | set(rng.sample(candidates, count - len(localized)))
+            else:
+                selected = set(rng.sample(remaining, count))
+            fail_groups.append((soft_bin, description, selected))
+            remaining = [item for item in remaining if item not in selected]
+            assigned += count
     else:
-        primary_fail_coordinates = _select_fail_coordinates(
+        fail_groups = [(18, "Pout_min", _select_fail_coordinates(
             pattern,
             coordinates,
             fail_count=fail_count,
             seed=seed,
-        )
+        ))]
 
-    if (
-        len(primary_fail_coordinates)
-        + len(secondary_fail_coordinates)
-        != fail_count
-    ):
+    if sum(len(group) for _, _, group in fail_groups) != fail_count:
         raise ValueError(
             f"Pattern {pattern} cannot provide {fail_count} unique fail coordinates."
         )
 
     pass_char = soft_bin_to_char(1)
-    primary_fail_char = soft_bin_to_char(18)
-    secondary_fail_char = soft_bin_to_char(20)
-    if (
-        pass_char is None
-        or primary_fail_char is None
-        or secondary_fail_char is None
-    ):
+    if pass_char is None or any(soft_bin_to_char(bin_id) is None for bin_id, _, _ in fail_groups):
         raise ValueError("Synthetic PASS/FAIL bins are not encodable.")
 
+    fail_by_coordinate = {
+        coordinate: (bin_id, description)
+        for bin_id, description, group in fail_groups
+        for coordinate in group
+    }
     dies: list[DieRecord] = []
     for row, column in sorted(coordinates):
         coordinate = (row, column)
-        if coordinate in primary_fail_coordinates:
-            soft_bin = 18
-            source_char = primary_fail_char
+        if coordinate in fail_by_coordinate:
+            soft_bin, description = fail_by_coordinate[coordinate]
+            source_char = soft_bin_to_char(soft_bin)
             result = DieResult.FAIL
-            description = "Pout_min"
-        elif coordinate in secondary_fail_coordinates:
-            soft_bin = 20
-            source_char = secondary_fail_char
-            result = DieResult.FAIL
-            description = "Pout_max"
         else:
             soft_bin = 1
             source_char = pass_char
@@ -245,22 +491,15 @@ def generate_pattern_dataset(
             count=passed,
             percentage=passed / tested,
         ),
-        BinRecord(
-            bin=18,
-            char=primary_fail_char,
-            description="Pout_min",
-            count=len(primary_fail_coordinates),
-            percentage=len(primary_fail_coordinates) / tested,
-        ),
     ]
-    if secondary_fail_coordinates:
+    for soft_bin, description, group in fail_groups:
         bins.append(
             BinRecord(
-                bin=20,
-                char=secondary_fail_char,
-                description="Pout_max",
-                count=len(secondary_fail_coordinates),
-                percentage=len(secondary_fail_coordinates) / tested,
+                bin=soft_bin,
+                char=soft_bin_to_char(soft_bin),
+                description=description,
+                count=len(group),
+                percentage=len(group) / tested,
             )
         )
 
@@ -272,7 +511,11 @@ def generate_pattern_dataset(
             flow_id="CP1",
             subcon="SYNTHETIC",
             tester="SIM-PATTERN",
-            test_program="SYNTH_PATTERN_V1",
+            test_program=(
+                "SYNTH_PRODUCTION_PROFILE_V1"
+                if pattern.startswith("PRODUCTION_PROFILE_")
+                else "SYNTH_PATTERN_V1"
+            ),
             probe_card="SIM-PC-01",
             start_time=datetime(2026, 1, 2, 8, 0, 0),
             stop_time=datetime(2026, 1, 2, 9, 0, 0),

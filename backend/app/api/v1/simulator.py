@@ -28,6 +28,7 @@ def _wafer(
     rows: int = 24,
     columns: int = 32,
     time_offset_minutes: int = 0,
+    profile_cluster_fraction: float | None = None,
 ):
     try:
         dataset = generate_pattern_dataset(
@@ -36,6 +37,7 @@ def _wafer(
             fail_count=fail_count,
             rows=rows,
             columns=columns,
+            profile_cluster_fraction=profile_cluster_fraction,
         )
     except ValueError as exc:
         raise AppError(
@@ -84,9 +86,21 @@ def generate_demo_lot(
     if request.scenario == DemoLotScenario.EDGE_DRIFT:
         patterns = [SyntheticPattern.EDGE] * 5
         fail_counts = [20, 22, 24, 26, 200]
+        cluster_fractions: list[float | None] = [None] * 5
+        dimensions = [(24, 32)] * 5
         description = (
             "Five compatible wafers with increasing edge failures; "
             "the final wafer is designed to trigger IQR yield outlier detection."
+        )
+    elif request.scenario == DemoLotScenario.PROFILE_DRIFT:
+        patterns = [SyntheticPattern.PRODUCTION_PROFILE_SCALE] * 5
+        fail_counts = [4900, 5100, 5300, 5560, 6600]
+        cluster_fractions = [0.18, 0.20, 0.22, 0.27, 0.35]
+        dimensions = [(88, 128)] * 5
+        description = (
+            "Five production-referenced synthetic wafers with a stable long-tail "
+            "bin profile, progressively stronger dominant-bin clustering, and a "
+            "final yield outlier."
         )
     elif request.scenario == DemoLotScenario.MIXED_PATTERNS:
         patterns = [
@@ -97,12 +111,16 @@ def generate_demo_lot(
             SyntheticPattern.LINE,
         ]
         fail_counts = [48] * 5
+        cluster_fractions = [None] * 5
+        dimensions = [(24, 32)] * 5
         description = (
             "Five compatible wafers with different deterministic spatial patterns."
         )
     else:
         patterns = [SyntheticPattern.RANDOM] * 5
         fail_counts = [32, 34, 33, 35, 32]
+        cluster_fractions = [None] * 5
+        dimensions = [(24, 32)] * 5
         description = "Five stable random wafers without an injected yield outlier."
 
     lot_id = f"DEMO-{request.scenario.value}"
@@ -114,7 +132,10 @@ def generate_demo_lot(
             product_id="DEMO_LOT_PRODUCT",
             lot_id=lot_id,
             wafer_id=f"{index + 1:02d}",
+            rows=dimensions[index][0],
+            columns=dimensions[index][1],
             time_offset_minutes=index * 20,
+            profile_cluster_fraction=cluster_fractions[index],
         )
         for index, (pattern, fail_count) in enumerate(
             zip(patterns, fail_counts, strict=True)

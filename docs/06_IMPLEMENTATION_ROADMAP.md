@@ -139,6 +139,8 @@ Phase 1 **不实现** Edge / Center / Ring / Cluster 等 pattern injection；这
 
 ### Simulator / tests
 
+演示数据与回归 Fixture 的构建、命名、安全边界和三套主演示基线必须遵循 `docs/08_DEMO_DATASET_AND_REGRESSION_GUIDE.md`。
+
 - Edge；
 - Center；
 - Ring；
@@ -294,7 +296,7 @@ AI 只能在 Phase 1–4 的确定性事实稳定后进入。
 ## Phase 6 — Report / Polish
 
 - report export；
-- enhanced simulator；
+- enhanced simulator（不得退化为单 Pattern Demo，持续维护 `MIXED_FAILURES` / `LONG_TAIL_MULTI_BIN` / `EDGE_DRIFT` 主演示基线）；
 - more parser fixtures；
 - Visual QA；
 - performance profiling；

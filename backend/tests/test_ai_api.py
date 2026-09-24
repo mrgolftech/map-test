@@ -159,6 +159,41 @@ def test_ai_invalid_schema_is_explicit_error(client, monkeypatch):
     assert response.json()["error"]["code"] == "LLM_SCHEMA_INVALID"
 
 
+def test_ai_missing_required_section_does_not_discard_saved_analysis(client, monkeypatch):
+    configure_llm(monkeypatch)
+    analysis_id = persist(client)
+    incomplete = {key: value for key, value in REPORT.items() if key != "possible_causes"}
+    monkeypatch.setattr(
+        ai_service_module,
+        "create_provider",
+        lambda _settings: FakeProvider(json.dumps(incomplete)),
+    )
+
+    response = client.post(f"/api/v1/analyses/{analysis_id}/ai")
+
+    assert response.status_code == 502
+    assert response.json()["error"]["code"] == "LLM_SCHEMA_INVALID"
+    assert client.get(f"/api/v1/analyses/{analysis_id}").status_code == 200
+
+
+def test_ai_accepts_markdown_json_fence_and_rejects_invalid_json(client, monkeypatch):
+    configure_llm(monkeypatch)
+    analysis_id = persist(client)
+    fenced = "```json\n" + json.dumps(REPORT) + "\n```"
+    monkeypatch.setattr(
+        ai_service_module, "create_provider", lambda _settings: FakeProvider(fenced)
+    )
+    assert client.post(f"/api/v1/analyses/{analysis_id}/ai").status_code == 200
+
+    monkeypatch.setattr(
+        ai_service_module, "create_provider", lambda _settings: FakeProvider("{broken")
+    )
+    failed = client.post(f"/api/v1/analyses/{analysis_id}/ai")
+    assert failed.status_code == 502
+    assert failed.json()["error"]["code"] == "LLM_SCHEMA_INVALID"
+    assert client.get(f"/api/v1/analyses/{analysis_id}").json()["data"]["ai_report"] is not None
+
+
 def test_ai_unconfigured_degrades_without_affecting_analysis(client):
     analysis_id = persist(client)
 

@@ -24,7 +24,7 @@ describe('AI API client', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/v1/settings/llm', undefined)
   })
 
-  it('tests LLM connection via POST', async () => {
+  it('tests LLM connection via authenticated POST', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response(JSON.stringify({
         data: { ok: true, model: 'demo', message: 'ok' },
@@ -32,24 +32,24 @@ describe('AI API client', () => {
       }), { status: 200 }),
     )
 
-    await testLLMConnection({ base_url: 'https://example.test/v1', model: 'demo', api_key: 'temporary-key' }, 'admin-token')
+    await testLLMConnection({ base_url: 'https://example.test/v1', model: 'demo', api_key: 'temporary-key' })
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/v1/settings/llm/test',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-LLM-Settings-Token': 'admin-token' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ base_url: 'https://example.test/v1', model: 'demo', api_key: 'temporary-key' }),
       },
     )
   })
 
-  it('fetches models and saves settings with credentials only in request bodies and headers', async () => {
+  it('fetches models and saves settings with credentials only in request bodies', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () =>
       new Response(JSON.stringify({ data: ['demo'], meta: {} }), { status: 200 }),
     )
-    await fetchLLMModels({ base_url: 'https://example.test/v1', api_key: 'secret' }, 'admin-token')
-    await saveLLMConfig({ base_url: 'https://example.test/v1', model: 'demo', api_key: 'secret' }, 'admin-token')
+    await fetchLLMModels({ base_url: 'https://example.test/v1', api_key: 'secret' })
+    await saveLLMConfig({ base_url: 'https://example.test/v1', model: 'demo', api_key: 'secret' })
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/v1/settings/llm/models', '/api/v1/settings/llm'])
     expect(fetchMock.mock.calls[0][1]?.method).toBe('POST')
     expect(fetchMock.mock.calls[1][1]?.method).toBe('PUT')

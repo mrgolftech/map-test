@@ -4,6 +4,7 @@ import { RouterProvider } from '@tanstack/react-router'
 import { AppProviders } from './app/providers'
 import { router } from './app/router'
 import './styles/globals.css'
+import './styles/brand.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

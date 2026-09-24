@@ -95,3 +95,55 @@ def test_long_tail_multibin_pat_cp_fixture_round_trip():
     ] == [
         (item.row, item.column, item.soft_bin) for item in expected.dies
     ]
+
+
+def _assert_profile_round_trip(pattern: str, *, rows: int, columns: int, fail_count: int):
+    expected = generate_pattern_dataset(
+        pattern,
+        rows=rows,
+        columns=columns,
+        fail_count=fail_count,
+        seed=20260924,
+    )
+    pat = serialize_pat(expected, filename=f"{pattern}.PAT")
+    cp = serialize_cp1(expected)
+
+    result = FileParseService(get_settings()).parse_sources(
+        [
+            RawSource(f"{pattern}.PAT", pat.encode()),
+            RawSource(f"{pattern}.CP1", cp.encode()),
+        ]
+    )
+
+    assert result.status == ParseStatus.VALID
+    assert result.dataset is not None
+    actual = result.dataset
+    assert actual.summary == expected.summary
+    assert {item.bin: item.count for item in actual.bins} == {
+        item.bin: item.count for item in expected.bins
+    }
+    assert [
+        (item.row, item.column, item.source_char, item.soft_bin, item.result)
+        for item in actual.dies
+    ] == [
+        (item.row, item.column, item.source_char, item.soft_bin, item.result)
+        for item in expected.dies
+    ]
+
+
+def test_production_profile_compact_pat_cp_round_trip():
+    _assert_profile_round_trip(
+        "PRODUCTION_PROFILE_COMPACT",
+        rows=24,
+        columns=32,
+        fail_count=322,
+    )
+
+
+def test_production_profile_scale_pat_cp_round_trip():
+    _assert_profile_round_trip(
+        "PRODUCTION_PROFILE_SCALE",
+        rows=88,
+        columns=128,
+        fail_count=5560,
+    )

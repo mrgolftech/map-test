@@ -83,24 +83,31 @@ L1 的目标是回答：
 作品单 Wafer 演示的默认主场景为：
 
 ```text
-MIXED_FAILURES
+PRODUCTION_PROFILE_COMPACT
 ```
 
-其目标是展示：
+该场景不是生产文件的缩小版，而是根据生产样例中可复用的**聚合轮廓**重新生成：
 
-> 同一张晶圆中存在多个 Fail Bin，不同 Fail Bin 可以同时具有不同空间分布。
+- Yield 位于 30%–40% 区间；
+- 一个主 Fail Bin 约占全部 Fail 的六成；
+- 第二、第三 Fail Bin 快速衰减；
+- 主 Fail Bin 有可识别的局部聚集；
+- 多数较大 Fail Bin 仍接近离散分布；
+- 少量小 Bin 可出现 Center / Ring 等局部模式。
 
-当前基线：
+当前 Synthetic 基线：
 
-| Soft Bin | Synthetic Description | Die Count | 注入特征 |
+| Soft Bin | Synthetic Description | Die Count | 设计特征 |
 | --- | --- | ---: | --- |
-| 1 | PASS | 212 | Remaining tested dies |
-| 18 | Pout_min | 165 | EDGE |
-| 20 | Pout_max | 60 | CENTER |
-| 16 | BER_RESULT | 36 | CLUSTER |
-| 22 | Pout_margin | 21 | RING |
-| 27 | GADC | 12 | RANDOM |
-| 28 | ICC_sleep | 6 | RANDOM |
+| 1 | PASS | 190 | Remaining tested dies |
+| 18 | RF_LOW | 187 | Cluster + distributed |
+| 20 | RF_HIGH_A | 55 | RANDOM |
+| 16 | BER_CHECK | 27 | RANDOM |
+| 22 | RF_HIGH_B | 18 | RANDOM |
+| 27 | ADC_CHECK | 16 | RANDOM |
+| 28 | SLEEP_CURRENT | 8 | RANDOM |
+| 32 | DEEPSLEEP_CURRENT | 7 | Q2 / CENTER |
+| 36 | MEMORY_CHECK | 4 | RING |
 
 固定事实：
 
@@ -108,24 +115,23 @@ MIXED_FAILURES
 seed = 20260924
 grid = 24 × 32
 tested = 512
-pass = 212
-fail = 300
-yield = 41.40625%
-non-zero fail bins = 6
+pass = 190
+fail = 322
+yield = 37.109375%
+non-zero fail bins = 8
 ```
 
 核心回归断言：
 
-- Bin18 可识别 EDGE；
-- Bin20 可识别 CENTER；
-- Bin16 可识别 LOCALIZED_CLUSTER；
-- Bin22 可识别 RING；
-- Bin27 / Bin28 不应被强行解释成确定根因；
+- Bin18 必须识别为 LOCALIZED_CLUSTER，cluster ratio 保持在 0.25–0.40；
+- Bin32 必须包含 CENTER；
+- Bin36 必须包含 RING；
+- Bin20 / Bin16 等主要次头部 Bin 不应被人为强制成规则 Pattern；
 - 所有 Fail Bin count 之和等于 fail_die；
 - 每颗 tested Die 只属于一个 Soft Bin；
 - Main Wafer Map、Bin Legend、主要 Fail Bin Mini Map 和 Spatial 页面应能同时呈现多类失效。
 
-该场景是最终作品中“单片故障拆解”的首选样本。
+原 `MIXED_FAILURES` 保留，用于“一张 Wafer 同时验证 EDGE / CENTER / CLUSTER / RING”的算法展示，但不再作为生产参考主演示。
 
 ---
 
@@ -134,20 +140,12 @@ non-zero fail bins = 6
 默认场景：
 
 ```text
-LONG_TAIL_MULTI_BIN
+PRODUCTION_PROFILE_SCALE
 ```
 
-该场景只参考生产数据中常见的聚合形态：
+设计只保留生产样例的聚合特征，不复用真实坐标、精确 Bin histogram 或生产标识。
 
-- 大尺寸；
-- 同片多个 Fail Bin；
-- 一个明显头部 Bin；
-- 多个长尾 Bin；
-- 主 Bin 同时包含局部聚集和离散点。
-
-不得复用任何生产晶圆的真实坐标或精确统计。
-
-当前基线：
+当前 Synthetic 基线：
 
 ```text
 seed = 20260924
@@ -155,6 +153,7 @@ grid = 88 × 128
 tested = 8844
 pass = 3284
 fail = 5560
+yield ≈ 37.13%
 non-zero fail bins = 16
 ```
 
@@ -162,66 +161,70 @@ Fail Bin 基线：
 
 | Soft Bin | Description | Count |
 | --- | --- | ---: |
-| 18 | RF_LOW | 2700 |
-| 20 | RF_HIGH | 1100 |
-| 16 | BIT_ERROR | 560 |
-| 22 | RF_MARGIN | 370 |
-| 27 | ADC_CHECK | 300 |
-| 28 | SLEEP_CURRENT | 160 |
-| 30 | CURRENT_CHECK | 90 |
-| 32 | IDLE_CHECK | 60 |
-| 35 | POWER_CHECK | 45 |
-| 19 | GAIN_CHECK | 40 |
-| 36 | TIMING_CHECK | 35 |
-| 21 | VOLTAGE_CHECK | 30 |
-| 33 | CLOCK_CHECK | 25 |
-| 24 | TEMP_CHECK | 20 |
-| 29 | NOISE_CHECK | 15 |
-| 34 | OTHER_CHECK | 10 |
+| 18 | RF_LOW | 3180 |
+| 20 | RF_HIGH_A | 950 |
+| 16 | BER_CHECK | 450 |
+| 22 | RF_HIGH_B | 300 |
+| 27 | ADC_CHECK | 270 |
+| 28 | SLEEP_CURRENT_LV | 130 |
+| 30 | SLEEP_CURRENT_HV | 80 |
+| 32 | DEEPSLEEP_CURRENT | 50 |
+| 35 | LOGIC_CHECK | 40 |
+| 19 | TX_CURRENT | 30 |
+| 36 | MEMORY_CHECK | 25 |
+| 21 | RF_HIGH_C | 20 |
+| 33 | WAKE_CHECK | 15 |
+| 23 | DEVIATION_CHECK | 10 |
+| 26 | CURRENT_CHECK | 5 |
+| 12 | MODE_CHECK | 5 |
 
 设计要求：
 
-- Bin18 由“局部 Cluster + 离散点”组成，不生成过度规则的人工图形；
-- 其余主要 Bin 以离散 / 长尾分布为主；
-- 真实 AnalysisEngine 应将主 Bin 的局部聚集成分识别出来；
-- 不能要求所有长尾 Bin 都得到显著 Pattern；
-- 该场景同时用于 8k+ Die 渲染、筛选、Mini Map、CSV / PNG、Spatial/Bin 页回归；
+- Bin18 由约 27% 注入局部 Cluster、其余重新随机分布组成；
+- Bin18 AnalysisEngine cluster ratio 应稳定在 0.25–0.40；
+- Bin20 / Bin16 / Bin22 / Bin27 / Bin28 应保持主要为 RANDOM；
+- Bin32 必须包含 CENTER；
+- Bin36 必须包含 RING；
+- 不能要求所有长尾 Bin 都得到显著 Pattern，小样本偶发方向/象限命中必须结合样本量解释；
+- 该场景用于 8k+ Die 渲染、筛选、Mini Map、CSV / PNG、Spatial/Bin 页与 Parser round-trip 回归；
 - 另保留独立 10k / 20k Die 性能测试，不用修改本场景来凑性能数字。
 
-该场景是最终作品中“真实复杂度与工程可用性”的首选样本。
+原 `LONG_TAIL_MULTI_BIN` 继续作为通用长尾多 Bin 回归，不再承担生产参考真值。
 
 ---
 
 ### L4 — Lot 趋势与异常主演示集
 
-最终作品的 Lot 主场景：
+最终作品的生产参考 Lot 主场景：
 
 ```text
-EDGE_DRIFT
+PROFILE_DRIFT
 ```
 
-当前基线为 5 片兼容 Wafer：
+5 片 Wafer 使用相同 88 × 128 geometry 和同一长尾 Bin family，仅改变 Fail 总量与主 Bin 聚集强度：
 
-| Wafer | Fail Die | 主要特征 |
-| --- | ---: | --- |
-| 01 | 20 | EDGE |
-| 02 | 22 | EDGE |
-| 03 | 24 | EDGE |
-| 04 | 26 | EDGE |
-| 05 | 200 | EDGE |
+| Wafer | Fail Die | Yield（约） | 主 Bin 注入 cluster fraction |
+| --- | ---: | ---: | ---: |
+| 01 | 4900 | 44.60% | 0.18 |
+| 02 | 5100 | 42.33% | 0.20 |
+| 03 | 5300 | 40.07% | 0.22 |
+| 04 | 5560 | 37.13% | 0.27 |
+| 05 | 6600 | 25.37% | 0.35 |
 
 目标：
 
-- 展示 Yield trend；
-- 展示 Edge failure / enrichment 的跨片变化；
-- 第 5 片应触发当前 IQR Yield Outlier 逻辑；
-- 支持从 Lot Overview 下钻到 Wafer05，再定位到主要 Fail Bin 与空间 Pattern；
-- 所有 Wafer 必须通过 compatibility check。
+- 展示 Yield trend 持续恶化；
+- 展示主 Fail Bin 数量与 cluster ratio 同步增强；
+- 第 5 片必须触发当前 IQR Yield Outlier；
+- 支持从 Lot Overview 下钻 Wafer05，再定位到主 Bin18 与 LOCALIZED_CLUSTER；
+- 所有 Wafer 必须通过 compatibility check；
+- Lot 中各片坐标都重新生成，不能由单片生产 Map 直接复制或做简单比例缩放。
 
-辅助 Lot 场景可保留：
+辅助 Lot 场景继续保留：
 
-- MIXED_PATTERNS：不同 Wafer 分别注入 EDGE / CENTER / RING / CLUSTER / LINE；
-- STABLE_RANDOM：无明显异常，用于验证系统不会必然制造 Outlier。
+- `EDGE_DRIFT`：透明验证 IQR 和 Edge enrichment 的算法 Golden；
+- `MIXED_PATTERNS`：不同 Wafer 分别注入 EDGE / CENTER / RING / CLUSTER / LINE；
+- `STABLE_RANDOM`：无明显异常，用于验证系统不会必然制造 Outlier。
 
 ---
 
@@ -229,9 +232,9 @@ EDGE_DRIFT
 
 正式演示、截图与视频默认突出：
 
-1. **典型多失效晶圆** → `MIXED_FAILURES`
-2. **生产规模多 Bin 晶圆** → `LONG_TAIL_MULTI_BIN`
-3. **批次良率异常追踪** → `EDGE_DRIFT`
+1. **典型多失效晶圆** → `PRODUCTION_PROFILE_COMPACT`
+2. **生产规模多 Bin 晶圆** → `PRODUCTION_PROFILE_SCALE`
+3. **批次良率异常追踪** → `PROFILE_DRIFT`
 
 L1 的 EDGE / CENTER / RING 等单 Pattern 场景继续保留，但主要用于算法验证和开发调试，不应占据最终作品的大量演示时间。
 
@@ -352,14 +355,17 @@ Scenario config
 
 ### Lot
 
-`EDGE_DRIFT` 必须验证：
+`PROFILE_DRIFT` 必须验证：
 
 - compatibility；
-- wafer_count；
-- yield trend；
-- IQR outlier；
+- wafer_count = 5；
+- yield trend 单调恶化；
+- 第 5 片 IQR outlier；
+- 主 Bin18 fail count / cluster ratio 的跨片变化；
 - Bin / enrichment trend；
 - Wafer Matrix / Mini Map。
+
+`EDGE_DRIFT` 继续保留为 IQR + Edge 的透明算法 Golden。
 
 ### AI
 
@@ -409,9 +415,12 @@ UI 截图可作为验收证据，但不能替代数值回归。
 
 | Internal ID | 推荐用户可见名称 |
 | --- | --- |
-| MIXED_FAILURES | 典型多失效晶圆 |
-| LONG_TAIL_MULTI_BIN | 生产规模多 Bin 晶圆 |
-| EDGE_DRIFT | 批次良率异常追踪 |
+| PRODUCTION_PROFILE_COMPACT | 典型多失效晶圆（生产参考） |
+| PRODUCTION_PROFILE_SCALE | 生产规模多 Bin 晶圆 |
+| PROFILE_DRIFT | 批次良率异常追踪 |
+| MIXED_FAILURES | 多 Pattern 单片算法演示 |
+| LONG_TAIL_MULTI_BIN | 通用长尾多 Bin 回归 |
+| EDGE_DRIFT | Edge / IQR 算法回归 |
 | MIXED_PATTERNS | 多空间模式 Lot |
 | STABLE_RANDOM | 稳定基线 Lot |
 

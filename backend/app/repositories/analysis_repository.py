@@ -1,9 +1,14 @@
+import json
 from datetime import datetime
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, delete, func, select
 from sqlalchemy.orm import Session
 
-from app.db.models import AnalysisRecord
+from app.db.models import (
+    AIConversationMessage,
+    AIConversationThread,
+    AnalysisRecord,
+)
 
 
 class AnalysisRepository:
@@ -73,6 +78,23 @@ class AnalysisRepository:
         return [dict(row) for row in self._session.execute(statement).mappings()]
 
     def delete(self, record: AnalysisRecord) -> None:
+        threads = list(self._session.scalars(select(AIConversationThread)))
+        thread_ids = [
+            thread.id
+            for thread in threads
+            if record.id in json.loads(thread.context_ids_json)
+        ]
+        if thread_ids:
+            self._session.execute(
+                delete(AIConversationMessage).where(
+                    AIConversationMessage.thread_id.in_(thread_ids)
+                )
+            )
+            self._session.execute(
+                delete(AIConversationThread).where(
+                    AIConversationThread.id.in_(thread_ids)
+                )
+            )
         self._session.delete(record)
         self._session.commit()
 

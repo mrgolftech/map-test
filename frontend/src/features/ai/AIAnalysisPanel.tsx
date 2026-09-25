@@ -12,6 +12,7 @@ import {
 } from 'antd'
 import { Bot, RefreshCw } from 'lucide-react'
 import type { AIReport } from '../../types/ai'
+import { AIChatPanel } from './AIChatPanel'
 import { analyzeWithAI, getLLMConfig } from './api'
 
 type AIAnalysisPanelProps = {
@@ -272,6 +273,7 @@ export function AIAnalysisPanel({
           model={model}
         />
       )}
+      <AIChatPanel analysisId={analysisId} reportReady={Boolean(report)} />
     </Space>
   )
 }

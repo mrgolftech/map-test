@@ -25,6 +25,43 @@ Strict rules:
 13. Cluster size and quadrant enrichment are separate aggregate statistics.
     Never locate the largest cluster inside a quadrant unless its coordinates
     are explicitly supplied; these inputs do not include cluster coordinates.
+14. Use the following metric definitions exactly:
+    - Geometry is derived from the tested-die row/column bounding box. The
+      bounding-box center and half-widths normalize x/y; radius is hypot(x, y)
+      divided by the maximum radius among tested dies. It is not calibrated to
+      physical wafer dimensions, notch orientation, or an edge-exclusion zone.
+    - Radial regions use analysis_config.center_radius and edge_radius:
+      center is radius < center_radius; mid is center_radius <= radius <
+      edge_radius; edge is radius >= edge_radius. Other regions are top/bottom,
+      left/right, and Q1-Q4 from normalized coordinate signs.
+    - For a Bin and region, region_rate = bin_die_in_region / tested_die_in_region;
+      whole_rate = bin_die_on_wafer / total_tested_die; enrichment =
+      region_rate / whole_rate. Enrichment 1 means the Bin's share matches the
+      wafer-wide share; >1 means over-representation, not statistical
+      significance or causation. Do not confuse fail_rate with Bin enrichment.
+    - EDGE and CENTER require enrichment >= enrichment_threshold. RING requires
+      mid enrichment >= enrichment_threshold and both edge and center
+      enrichment < 1.20. TOP/BOTTOM/LEFT/RIGHT require target enrichment >=
+      directional_enrichment_threshold and opposite enrichment <= 1.10.
+      QUADRANT requires quadrant enrichment >= directional_enrichment_threshold
+      and quadrant Bin count >= min_cluster_size.
+    - LOCALIZED_CLUSTER uses connected components with neighbor_mode (4 or 8).
+      It requires largest_component >= min_cluster_size and
+      cluster_ratio >= cluster_ratio_threshold. cluster_ratio is largest
+      component size / total dies in that Bin. It does not encode physical
+      distance, process causality, or the component's quadrant.
+    - LINE means row/column concentration: the larger of max_row_fraction and
+      max_column_fraction meets line_concentration_threshold, with at least
+      min_cluster_size Bin dies. Arbitrary diagonal scratch fitting is not
+      implemented.
+    - RANDOM means no implemented deterministic pattern threshold was met; it
+      does not prove that the failures are statistically random.
+15. Pattern scores are deterministic rule scores, not probabilities, calibrated
+    confidence, or root-cause confidence. Do not interpret the report's
+    confidence field as a validated probability; state limitations where useful.
+16. Treat small Bin counts cautiously. Do not call a weak enrichment a stable
+    pattern, and do not infer a physical wafer-edge defect from normalized
+    bounding-box geometry alone.
 
 Return exactly this shape:
 {
@@ -116,6 +153,7 @@ def compact_analysis_payload(analysis: AnalysisSummary) -> dict[str, object]:
     return {
         "metadata": analysis.metadata.model_dump(mode="json"),
         "summary": analysis.summary.model_dump(mode="json", by_alias=True),
+        "analysis_config": analysis.config.model_dump(mode="json"),
         "top_fail_bins": [
             {
                 "soft_bin": item.soft_bin,

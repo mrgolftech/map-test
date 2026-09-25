@@ -386,3 +386,22 @@ textarea { font: inherit; }
 .ai-confidence {
   width: min(320px, 100%);
 }
+
+.ai-chat-stack,
+.ai-chat-turn {
+  width: 100%;
+}
+
+.ai-chat-answer {
+  margin-bottom: 0 !important;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.ai-chat-citations {
+  margin-top: 6px;
+}
+
+.ai-chat-model {
+  font-size: 12px;
+}

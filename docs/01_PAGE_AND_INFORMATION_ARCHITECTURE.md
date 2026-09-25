@@ -226,7 +226,7 @@ Wafer Map 至少占主要可视区域的 60%。
 
 #### AI Analysis
 
-不做聊天窗口主导布局。使用工程报告布局：
+先显示工程报告，报告下方提供针对当前分析的追问区；聊天不替代报告布局：
 
 - Executive Summary；
 - Key Findings；
@@ -235,7 +235,9 @@ Wafer Map 至少占主要可视区域的 60%。
 - Recommended Checks；
 - Confidence；
 - Limitations；
-- 可选“继续追问”。
+- 继续追问及历史问题列表；
+- 每个回答显示引用指标、模型和时间；
+- 证据不足时使用 warning 样式说明。
 
 ## 6. 分析历史页
 
@@ -318,6 +320,9 @@ LLM 输入多 Wafer AnalysisSummary，不传完整海量 Die 列表。
 - Bin 漂移；
 - Pattern 重复；
 - 建议优先比较的 Tester / Probe / Program 等条件。
+
+多 Wafer / Lot 页面提供基于当前显示 Wafer 集合的问答区。问题列表可展开查看完整回答、
+引用指标及证据限制；切换 Wafer 集合后进入独立对话上下文。
 
 ## 8. 设置页
 

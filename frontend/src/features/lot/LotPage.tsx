@@ -17,6 +17,7 @@ import {
 import type { EChartsOption } from 'echarts'
 import { ArrowLeft, Eye } from 'lucide-react'
 import { PageHeader } from '../../components/common/PageHeader'
+import { AIChatPanel } from '../ai/AIChatPanel'
 import type {
   BinAggregate,
   LotListItem,
@@ -290,6 +291,7 @@ export function LotPage() {
             columns={lotColumns}
             loading={lotsQuery.isFetching}
             pagination={false}
+            scroll={{ x: 900 }}
             locale={{ emptyText: <Empty description="暂无可汇总的 Lot" /> }}
             onRow={(record) => ({
               onClick: () => navigate({
@@ -507,6 +509,11 @@ export function LotPage() {
                   }
                 />
               )}
+              <section className="section-card">
+                <AIChatPanel
+                  analysisIds={data.wafers.map((item) => item.analysis_id)}
+                />
+              </section>
             </>
           )}
         </>

@@ -270,6 +270,10 @@ DELETE /analyses/{id}
 
 POST   /analyses/{id}/ai
 POST   /analyses/compare
+GET    /ai/chat/analyses/{id}
+POST   /ai/chat/analyses/{id}
+GET    /ai/chat/comparison?analysis_ids={id}&analysis_ids={id}
+POST   /ai/chat/comparison
 
 GET    /lots
 GET    /lots/{lot_id}/summary
@@ -376,6 +380,29 @@ analysis
 └─ validation_json
 ```
 
+Conversation persistence:
+
+```text
+ai_conversation_thread
+├─ id
+├─ scope (analysis | comparison)
+├─ context_key
+├─ context_ids_json
+├─ created_at
+└─ updated_at
+
+ai_conversation_message
+├─ id
+├─ thread_id
+├─ role
+├─ content
+├─ citations_json
+├─ limitations_json
+├─ insufficient_evidence
+├─ model
+└─ created_at
+```
+
 原则：
 
 - 列表/筛选只读取结构化摘要字段；
@@ -386,7 +413,8 @@ analysis
 - Product / Lot / Wafer / Yield / Main Bin / Pattern / Created At 建索引；
 - ORM Model 不直接暴露为 API DTO。
 
-未来需要 AI report、设置、多版本源文件或更复杂查询时，再新增 `ai_report` / `app_setting` / `analysis_file` 等表。不要为尚未实现的能力预建空表。
+AI report 当前保存在 `analysis`；LLM 配置和对话分别保存在专用表中。对话按单片
+analysis ID 或排序后的比较 ID 集合建立上下文。删除 Analysis 时同步清除包含该记录的对话。
 
 未来迁移 PostgreSQL 时不改变领域模型和 API 语义。
 

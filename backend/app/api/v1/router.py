@@ -4,6 +4,7 @@ from app.api.v1.ai import router as ai_router
 from app.api.v1.analyses import router as analyses_router
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.auth import router as auth_router
+from app.api.v1.chat import router as chat_router
 from app.api.v1.comparison import router as comparison_router
 from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.files import router as files_router
@@ -20,6 +21,7 @@ api_router.include_router(auth_router)
 protected_router = APIRouter(dependencies=[Depends(require_admin)])
 protected_router.include_router(dashboard_router)
 protected_router.include_router(ai_router)
+protected_router.include_router(chat_router)
 protected_router.include_router(files_router)
 protected_router.include_router(simulator_router)
 protected_router.include_router(analysis_router)

@@ -432,7 +432,7 @@ export function WaferPage({
 
       <Row gutter={[12, 12]} className="wafer-kpi-row">
         <Col xs={12} md={6}>
-          <Card size="small"><Statistic title="Yield" value={(dataset.summary.yield ?? 0) * 100} precision={2} suffix="%" /></Card>
+          <Card size="small"><Statistic title="Yield" value={Number(((dataset.summary.yield ?? 0) * 100).toFixed(2))} precision={2} suffix="%" /></Card>
         </Col>
         <Col xs={12} md={6}>
           <Card size="small"><Statistic title="Tested" value={dataset.summary.tested_die} /></Card>

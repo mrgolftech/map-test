@@ -1,6 +1,16 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Float, Index, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -65,4 +75,50 @@ class LLMRuntimeConfig(Base):
     encrypted_api_key: Mapped[str] = mapped_column(Text, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+
+class AIConversationThread(Base):
+    __tablename__ = "ai_conversation_thread"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    scope: Mapped[str] = mapped_column(String(24), nullable=False)
+    context_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    context_ids_json: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+    __table_args__ = (
+        UniqueConstraint("scope", "context_key", name="uq_ai_thread_scope_context"),
+        Index("ix_ai_thread_updated_at", "updated_at"),
+    )
+
+
+class AIConversationMessage(Base):
+    __tablename__ = "ai_conversation_message"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    thread_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("ai_conversation_thread.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    citations_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    limitations_json: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+    insufficient_evidence: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    model: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+    __table_args__ = (
+        Index("ix_ai_message_thread_created", "thread_id", "created_at"),
     )

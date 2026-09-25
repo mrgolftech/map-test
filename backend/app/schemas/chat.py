@@ -59,6 +59,7 @@ class ChatAnswerPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     answer: str = Field(min_length=1, max_length=6000)
-    citation_ids: list[str] = Field(default_factory=list, max_length=12)
+    # Accept verbose model output, then cap verified display citations in the service.
+    citation_ids: list[str] = Field(default_factory=list, max_length=64)
     insufficient_evidence: bool = False
     limitations: list[str] = Field(default_factory=list, max_length=8)

@@ -40,7 +40,9 @@ possible causes explicitly hypothetical and suggest measurable next checks.
 Do not treat normalized map regions as physical wafer coordinates or a pattern
 classification as confirmed root cause. Output one JSON object only, with keys:
 answer, citation_ids, insufficient_evidence, limitations. Keep answer concise
-and use plain text (no Markdown or raw HTML)."""
+and use plain text (no Markdown or raw HTML). Keep the answer under 400 Chinese
+characters, select only the minimum necessary evidence, and return no more than
+12 distinct citation_ids."""
 
 
 def _json_from_response(value: str) -> str:
@@ -482,12 +484,18 @@ class AIChatService:
         raw = self._get_provider().complete(
             system_prompt=CHAT_SYSTEM_PROMPT,
             user_prompt=user_prompt,
-            max_tokens=min(self._settings.llm_max_output_tokens, 2000),
+            max_tokens=min(self._settings.llm_max_output_tokens, 8192),
             temperature=0.2,
         )
         try:
+            payload = json.loads(_json_from_response(raw))
+            if isinstance(payload, dict) and isinstance(
+                payload.get("limitations"), str
+            ):
+                limitation = payload["limitations"].strip()
+                payload["limitations"] = [limitation] if limitation else []
             answer = ChatAnswerPayload.model_validate(
-                json.loads(_json_from_response(raw))
+                payload
             )
         except (json.JSONDecodeError, ValidationError, TypeError) as exc:
             raise AppError(
@@ -500,12 +508,19 @@ class AIChatService:
         valid_ids = list(dict.fromkeys(
             item for item in answer.citation_ids if item in catalog
         ))
+        has_invalid_citations = len(valid_ids) != len(answer.citation_ids)
+        citations_exceeded = len(valid_ids) > 12
+        valid_ids = valid_ids[:12]
         citations = [catalog[item] for item in valid_ids]
         limitations = list(answer.limitations)
         insufficient = answer.insufficient_evidence
-        if len(valid_ids) != len(answer.citation_ids):
+        if has_invalid_citations:
             insufficient = True
             limitations.append("模型返回了不存在的引用，已从回答中剔除。")
+        if citations_exceeded:
+            insufficient = True
+            limitations.append("模型引用超过 12 项展示上限，已截取前 12 项。")
+        limitations = limitations[:8]
         if not citations and not insufficient:
             insufficient = True
             limitations.append("回答没有引用可验证的分析指标，请结合原始数据复核。")

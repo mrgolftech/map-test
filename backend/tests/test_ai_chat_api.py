@@ -119,10 +119,38 @@ def test_analysis_chat_is_grounded_and_persisted(client, monkeypatch):
         "executive_summary"
     ]
     assert "dies" not in provider.prompts[0]
-
     restored = client.get(f"/api/v1/ai/chat/analyses/{analysis_id}")
     assert restored.status_code == 200
     assert restored.json()["data"]["messages"] == data["messages"]
+
+
+def test_analysis_chat_accepts_single_string_limitation(client, monkeypatch):
+    configure_llm(monkeypatch)
+    analysis_id = persist(client)
+    save_report(client, monkeypatch, analysis_id)
+    provider = FixedProvider(
+        json.dumps(
+            {
+                "answer": "良率为 37.11%。",
+                "citation_ids": ["summary.yield"],
+                "insufficient_evidence": False,
+                "limitations": "该结论仅基于当前晶圆数据。",
+            },
+            ensure_ascii=False,
+        )
+    )
+    monkeypatch.setattr(
+        ai_chat_module, "OpenAICompatibleProvider", lambda **_kwargs: provider
+    )
+
+    response = client.post(
+        f"/api/v1/ai/chat/analyses/{analysis_id}",
+        json={"question": "这片晶圆良率是多少？"},
+    )
+
+    assert response.status_code == 200, response.text
+    answer = response.json()["data"]["messages"][-1]
+    assert answer["limitations"] == ["该结论仅基于当前晶圆数据。"]
 
 
 def test_comparison_chat_cites_wafer_metrics_and_marks_invalid_citations(
@@ -167,6 +195,49 @@ def test_comparison_chat_cites_wafer_metrics_and_marks_invalid_citations(
     )
     assert restored.status_code == 200
     assert restored.json()["data"]["messages"] == messages
+
+
+def test_comparison_chat_caps_excessive_valid_citations(client, monkeypatch):
+    configure_llm(monkeypatch)
+    ids = [persist(client, wafer=f"0{index}") for index in (1, 2)]
+
+    class VerboseCitationProvider(FixedProvider):
+        def complete(self, *, system_prompt, user_prompt, max_tokens, temperature):
+            prompt = json.loads(user_prompt)
+            evidence_ids = [item["id"] for item in prompt["available_evidence"]]
+            assert len(evidence_ids) >= 13
+            self.response = json.dumps(
+                {
+                    "answer": "两片晶圆有多项指标可供比较。",
+                    "citation_ids": evidence_ids[:15],
+                    "insufficient_evidence": False,
+                    "limitations": [],
+                },
+                ensure_ascii=False,
+            )
+            return super().complete(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+
+    provider = VerboseCitationProvider("")
+    monkeypatch.setattr(
+        ai_chat_module, "OpenAICompatibleProvider", lambda **_kwargs: provider
+    )
+
+    response = client.post(
+        "/api/v1/ai/chat/comparison",
+        json={"analysis_ids": ids, "question": "比较这两片晶圆。"},
+    )
+
+    assert response.status_code == 200, response.text
+    answer = response.json()["data"]["messages"][-1]
+    assert len(answer["citations"]) == 12
+    assert answer["insufficient_evidence"] is True
+    assert "证据不足" in answer["content"]
+    assert any("超过 12 项展示上限" in item for item in answer["limitations"])
 
 
 def test_deleting_analysis_removes_related_chat_thread(client, monkeypatch):
